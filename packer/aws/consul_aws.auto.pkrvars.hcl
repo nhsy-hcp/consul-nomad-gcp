@@ -1,0 +1,5 @@
+consul_version = "1.15.3+ent"
+nomad_version = "1.5.6+ent"
+image = "consul-nomad-ent"
+sshuser = "admin"
+aws_region = "eu-west-1"

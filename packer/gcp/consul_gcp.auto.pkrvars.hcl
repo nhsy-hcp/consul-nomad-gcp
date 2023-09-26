@@ -1,0 +1,5 @@
+consul_version = "1.15.3+ent"
+nomad_version = "1.5.6+ent"
+image = "consul-nomad-ent"
+sshuser = "packer"
+gcp_project = "hc-155eca2714da4c78be694b5e20a"
