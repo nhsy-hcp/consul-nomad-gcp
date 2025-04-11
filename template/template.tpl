@@ -10,6 +10,8 @@ CONSUL_LICENSE="${consul_license}"
 NOMAD_LICENSE="${nomad_license}"
 NOMAD_DIR="/etc/nomad.d"
 NOMAD_URL="https://releases.hashicorp.com/nomad"
+CNI_PLUGIN_VERSION="v1.5.1"
+
 
 # ---- Check directories ----
 if [ -d "$CONSUL_DIR" ];then
@@ -55,14 +57,24 @@ node_meta = {
   gcp_zone = "$(curl -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/zone" | awk -F / '{print $NF}')"
 }
 encrypt = "$(cat $CONSUL_DIR/keygen.out)"
-ca_file = "$CONSUL_DIR/tls/consul-agent-ca.pem"
-cert_file = "$CONSUL_DIR/tls/$DC-server-consul-0.pem"
-key_file = "/etc/consul.d/tls/$DC-server-consul-0-key.pem"
-verify_incoming = false
-verify_outgoing = false
-verify_server_hostname = false
-retry_join = ["provider=gce project_name=${gcp_project} tag_value=${tag}"]
+retry_join = ["provider=gce project_name=${gcp_project} tag_value=${tag} zone_pattern=\"${zone}\""]
 license_path = "$CONSUL_DIR/license.hclic"
+log_level = "DEBUG"
+
+tls {
+   defaults {
+      ca_file = "$CONSUL_DIR/tls/consul-agent-ca.pem"
+      cert_file = "$CONSUL_DIR/tls/$DC-server-consul-0.pem"
+      key_file = "/etc/consul.d/tls/$DC-server-consul-0-key.pem"
+      verify_incoming = false
+      verify_outgoing = true
+      verify_server_hostname = false
+   }
+   internal_rpc {
+      verify_server_hostname = true
+   }
+}
+
 
 auto_encrypt {
   allow_tls = true
@@ -75,11 +87,8 @@ acl = {
   tokens = {
     initial_management = "${bootstrap_token}"
     agent = "${bootstrap_token}"
+    dns = "${bootstrap_token}"
   }
-}
-
-performance {
-  raft_multiplier = 1
 }
 
 audit {
@@ -96,6 +105,12 @@ audit {
   }
 }
 
+reporting {
+  license {
+    enabled = false
+  }
+}
+
 
 EOF
 
@@ -105,7 +120,7 @@ bootstrap_expect = 3
 
 ui = true
 client_addr = "0.0.0.0"
-advertise_addr = "$PRIVATE_IP"
+bind_addr = "$PRIVATE_IP"
 
 connect {
   enabled = true
@@ -117,9 +132,7 @@ ports {
   grpc_tls = 8503
 }
 
-node_meta {
-  zone = "${zone}"
-}
+
 EOF
 
 echo "==> Creating the Consul service"
@@ -173,7 +186,7 @@ else
 fi
 
 # Installing CNI plugins
-curl -L -o cni-plugins.tgz "https://github.com/containernetworking/plugins/releases/download/v1.0.0/cni-plugins-linux-$( [ $(uname -m) = aarch64 ] && echo arm64 || echo amd64)"-v1.0.0.tgz
+curl -L -o cni-plugins.tgz "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/cni-plugins-linux-$( [ $(uname -m) = aarch64 ] && echo arm64 || echo amd64)"-$CNI_PLUGIN_VERSION.tgz
 sudo mkdir -p /opt/cni/bin
 sudo tar -C /opt/cni/bin -xzf cni-plugins.tgz
 
@@ -189,6 +202,17 @@ acl  {
 }
 consul {
   token = "${bootstrap_token}"
+  enabled = true
+
+  service_identity {
+    aud = ["consul.io"]
+    ttl = "1h"
+  }
+
+  task_identity {
+    aud = ["consul.io"]
+    ttl = "1h"
+  }
 }
 EOF
 
@@ -279,8 +303,25 @@ sudo systemctl start consul
 echo "==> Starting Nomad..."
 sudo systemctl start nomad
 
+
+
+# We select the last node as the Nomad bootstrapper
 %{ if nomad_bootstrapper }
+# But wait for the Nomad leader to be elected
+HTTP_STATUS=$(curl -s -o /dev/null -w "%%{http_code}" http://localhost:4646/v1/status/leader)
+counter=0
+while [ $HTTP_STATUS -ne 200 ]; do
+  echo "==> Waiting for Nomad to start..."
+  sleep 10
+  HTTP_STATUS=$(curl -s -o /dev/null -w "%%{http_code}" http://localhost:4646/v1/status/leader)
+  counter=$((counter+1))
+  if [ $counter -eq 10 ]; then
+    echo "==> Nomad failed to start. Exiting..."
+    break
+  fi
+done
 echo "==> Bootstrap Nomad..."
-sleep 20
+# sleep 20
 nomad acl bootstrap $NOMAD_DIR/nomad_bootstrap
 %{ endif }
+

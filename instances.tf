@@ -2,6 +2,11 @@
 resource "random_uuid" "nomad_bootstrap" {
 }
 
+locals {
+  # We concatenate the default partition with the list of partitions to create the instances including the default partition
+  admin_partitions = distinct(concat(["default"],var.consul_partitions))
+  vm_image = var.use_hcp_packer ? data.hcp_packer_artifact.consul-nomad[0].external_identifier : data.google_compute_image.my_image.self_link
+}
 
 # Creating the instance template to be use from instances
 resource "google_compute_instance_template" "instance_template" {
@@ -14,7 +19,7 @@ resource "google_compute_instance_template" "instance_template" {
 
   // boot disk
   disk {
-    source_image = data.google_compute_image.my_image.self_link
+    source_image = local.vm_image
     device_name = "consul-${var.cluster_name}"
     # source = google_compute_region_disk.vault_disk.name
   }
@@ -45,7 +50,7 @@ resource "google_compute_instance_template" "instance_template_clients" {
 
   // boot disk
   disk {
-    source_image = data.google_compute_image.my_image.self_link
+    source_image = local.vm_image
     device_name = "consul-${var.cluster_name}"
     # source = google_compute_region_disk.vault_disk.name
   }
@@ -87,7 +92,7 @@ resource "google_compute_instance_from_template" "vm_server" {
     tag = var.cluster_name,
     consul_license = var.consul_license,
     nomad_license = var.nomad_license,
-    zone = "zone-",
+    zone = var.gcp_zone,
     bootstrap_token = var.consul_bootstrap_token,
     node_name = "server-${count.index}",
     nomad_token = random_uuid.nomad_bootstrap.result,
@@ -103,6 +108,7 @@ resource "google_compute_instance_from_template" "vm_server" {
 }
 
 resource "google_compute_instance_from_template" "vm_clients" {
+  depends_on = [ consul_admin_partition.demo_partitions ]
   count = var.numclients
   name = "vm-clients-${count.index}-${random_id.server.dec}"
   zone = var.gcp_zone
@@ -124,8 +130,9 @@ resource "google_compute_instance_from_template" "vm_clients" {
     consul_license = var.consul_license,
     nomad_license = var.nomad_license,
     bootstrap_token = var.consul_bootstrap_token,
-    zone = "zone-",
+    zone = var.gcp_zone,
     node_name = "client-${count.index}"
+    partition = var.consul_partitions != [""] ? element(local.admin_partitions,count.index) : "default"
   })
 
   labels = {
@@ -135,6 +142,7 @@ resource "google_compute_instance_from_template" "vm_clients" {
   #   create_before_destroy = true
   # }
 }
+
 
 resource "google_compute_instance_from_template" "vm_cts" {
   # count = var.numclients
@@ -156,7 +164,8 @@ resource "google_compute_instance_from_template" "vm_cts" {
     consul_license = var.consul_license,
     bootstrap_token = var.consul_bootstrap_token,
     node_name = "client-cts",
-    tfc_token = var.tfc_token
+    tfc_token = var.tfc_token,
+    zone = var.gcp_zone
   })
 
   labels = {

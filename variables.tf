@@ -65,6 +65,34 @@ variable "dns_zone" {
   default = "doormat-useremail"
 }
 
+variable "consul_partitions" {
+  description = "List of Consul Admin Partitions"
+  type = list(string)
+  default = []
+}
+
+variable "use_hcp_packer" {
+  description = "Use HCP Packer to store images"
+  default = false
+}
+
+variable "hcp_packer_bucket" {
+  description = "Bucket name for HCP Packer"
+  default = "consul-nomad"  
+}
+
+variable "hcp_packer_channel" {
+  description = "Channel for HCP Packer"
+  default = "latest"
+}
+
+variable "hcp_packer_region" {
+  description = "Region for HCP Packer"
+  default = "europe-west1-c"
+}
+variable "hcp_project_id" {
+  description = "HCP Project ID"
+}
 # variable "cert" {
 #   description = "Certificate for server node"
 # }

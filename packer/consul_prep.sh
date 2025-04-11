@@ -7,15 +7,24 @@ export CONSUL_URL="https://releases.hashicorp.com/consul"
 export DC_NAME="dc1"
 export CONSUL_DIR="/etc/consul.d"
 export CONSUL_DATA="/opt/consul"
+export LINUX_DISTRO=$(lsb_release -is | tr '[:upper:]' '[:lower:]')
 
 
 if [[ "$OSTYPE" == "linux"* ]];then
-  echo "Using OS: $OSTYPE. We will select an \"amd_64\" Arch."
+  echo "Using OS: $OSTYPE. This is supported"
   OS_SUFFIX="linux_amd64"
 else
   # WARNING: Let's assume that if the OS is not Linux, then it is a MacOS
-  echo "Using OS: $OSTYPE. Selecting \"darwind_amd64\" arch..."
-  OS_SUFFIX="darwin_amd64"
+  echo "Using OS: $OSTYPE. This may not be supported. Please use a \"linux_amd64\" Arch"
+  exit 1
+fi
+
+if [[ "$LINUX_DISTRO" == "debian" ]] || [[ "$LINUX_DISTRO" == "ubuntu" ]];then
+  echo "Using Linux Distro: $LINUX_DISTRO. This is supported"
+else
+  # WARNING: Let's assume that if the OS is not Linux, then it is a MacOS
+  echo "Using Linux Distro: $LINUX_DISTRO. This may not be supported. Please use a \"debian\" Distro"
+  exit 1
 fi
 
 # This line is to avoid the "unable to initialize frontend: Dialog" message error from Packer build

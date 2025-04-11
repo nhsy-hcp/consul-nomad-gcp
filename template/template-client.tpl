@@ -10,6 +10,8 @@ CONSUL_LICENSE="${consul_license}"
 NOMAD_LICENSE="${nomad_license}"
 NOMAD_DIR="/etc/nomad.d"
 NOMAD_URL="https://releases.hashicorp.com/nomad"
+CNI_PLUGIN_VERSION="v1.5.1"
+
 
 # ---- Adding some extra packages for CTS ----
 curl --fail --silent --show-error --location https://apt.releases.hashicorp.com/gpg | \
@@ -21,7 +23,7 @@ echo "deb [arch=amd64 signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gp
 
 sudo apt-get update
 
-sudo apt-get install consul-terraform-sync-enterprise
+sudo apt-get install consul-terraform-sync-enterprise jq -y
 
 
 
@@ -56,10 +58,10 @@ echo $NOMAD_LICENSE | sudo tee $NOMAD_DIR/license.hclic > /dev/null
 
 # ---- Preparing certificates ----
 echo "==> Adding server certificates to /etc/consul.d"
-consul tls cert create -server -dc $DC \
-    -ca "$CONSUL_DIR"/tls/consul-agent-ca.pem \
-    -key  "$CONSUL_DIR"/tls/consul-agent-ca-key.pem
-sudo mv "$DC"-server-consul-*.pem "$CONSUL_DIR"/tls/
+# consul tls cert create -server -dc $DC \
+#     -ca "$CONSUL_DIR"/tls/consul-agent-ca.pem \
+#     -key  "$CONSUL_DIR"/tls/consul-agent-ca-key.pem
+# sudo mv "$DC"-server-consul-*.pem "$CONSUL_DIR"/tls/
 
 # ----------------------------------
 echo "==> Generating Consul configs"
@@ -74,14 +76,23 @@ node_meta = {
   gcp_zone = "$(curl -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/zone" | awk -F / '{print $NF}')"
 }
 encrypt = "$(cat $CONSUL_DIR/keygen.out)"
-# ca_file = "$CONSUL_DIR/tls/consul-agent-ca.pem"
-# cert_file = "$CONSUL_DIR/tls/$DC-server-consul-0.pem"
-# key_file = "/etc/consul.d/tls/$DC-server-consul-0-key.pem"
-# verify_incoming = true
-# verify_outgoing = true
-# verify_server_hostname = true
-retry_join = ["provider=gce project_name=${gcp_project} tag_value=${tag}"]
+retry_join = ["provider=gce project_name=${gcp_project} tag_value=${tag} zone_pattern=\"${zone}\""]
 license_path = "$CONSUL_DIR/license.hclic"
+log_level = "DEBUG"
+
+
+tls {
+   defaults {
+      ca_file = "$CONSUL_DIR/tls/consul-agent-ca.pem"
+
+      verify_incoming = false
+      verify_outgoing = true
+   }
+   internal_rpc {
+      verify_server_hostname = false
+   }
+}
+
 
 
 acl = {
@@ -91,9 +102,9 @@ acl = {
   tokens = {
     initial_management = "${bootstrap_token}"
     agent = "${bootstrap_token}"
+    dns = "${bootstrap_token}"
   }
 }
-
 
 audit {
   enabled = true
@@ -109,18 +120,25 @@ audit {
   }
 }
 
-client_addr = "0.0.0.0"
-advertise_addr = "$PRIVATE_IP"
-
-connect {
-  enabled = true
+reporting {
+  license {
+    enabled = false
+  }
 }
+
+
+partition ="${partition}"
+
+client_addr = "0.0.0.0"
+bind_addr = "$PRIVATE_IP"
+recursors = ["8.8.8.8","1.1.1.1"]
+
 
 ports {
- grpc = 8502
- grpc_tls = 8503
+  https = 8501
+  grpc = 8502
+  grpc_tls = 8503
 }
-
 
 EOF
 
@@ -177,9 +195,15 @@ else
 fi
 
 # Installing CNI plugins
-curl -L -o cni-plugins.tgz "https://github.com/containernetworking/plugins/releases/download/v1.0.0/cni-plugins-linux-$( [ $(uname -m) = aarch64 ] && echo arm64 || echo amd64)"-v1.0.0.tgz
+curl -L -o cni-plugins.tgz "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/cni-plugins-linux-$( [ $(uname -m) = aarch64 ] && echo arm64 || echo amd64)"-$CNI_PLUGIN_VERSION.tgz
 sudo mkdir -p /opt/cni/bin
 sudo tar -C /opt/cni/bin -xzf cni-plugins.tgz
+
+# Installing Consul CNI
+export ARCH_CNI="$( [ $(uname -m) = aarch64 ] && echo arm64 || echo amd64)"
+curl -L -o consul-cni.zip "https://releases.hashicorp.com/consul-cni/1.5.1/consul-cni_1.5.1_linux_$ARCH_CNI".zip
+sudo unzip consul-cni.zip -d /opt/cni/bin -x LICENSE.txt
+
 
 # ----------------------------------
 echo "==> Generating Nomad configs"
@@ -192,6 +216,16 @@ acl  {
 }
 consul {
   token = "${bootstrap_token}"
+  
+  service_identity {
+    aud = ["consul.io"]
+    ttl = "1h"
+  }
+
+  task_identity {
+    aud = ["consul.io"]
+    ttl = "1h"
+  }
 }
 
 EOF
@@ -303,3 +337,18 @@ sudo systemctl start consul
 
 echo "==> Starting Nomad..."
 sudo systemctl start nomad
+
+#Configuring DNS resolution for Consul
+sudo mkdir -p /etc/systemd/resolved.conf.d
+
+sudo tee /etc/systemd/resolved.conf.d/consul.conf <<EOF
+[Resolve]
+DNS=127.0.0.1
+DNSSEC=false
+Domains=~consul
+EOF
+
+sudo iptables --table nat --append OUTPUT --destination localhost --protocol udp --match udp --dport 53 --jump REDIRECT --to-ports 8600
+sudo iptables --table nat --append OUTPUT --destination localhost --protocol tcp --match tcp --dport 53 --jump REDIRECT --to-ports 8600
+
+sudo systemctl restart systemd-resolved

@@ -21,7 +21,7 @@ output "NOMAD_ADDR" {
   value = "http://${trimsuffix(google_dns_record_set.dns.name,".")}:4646"
 }
 
-output "CONSULT_HTTP_ADDR" {
+output "CONSUL_HTTP_ADDR" {
   value = "https://${trimsuffix(google_dns_record_set.dns.name,".")}:8501"
 }
 
@@ -32,5 +32,20 @@ output "CONSUL_TOKEN" {
 
 output "NOMAD_TOKEN" {
   value = random_uuid.nomad_bootstrap.result
+  sensitive = true
+}
+
+output "partitions" {
+  value = [ for count in range(var.numclients) : var.consul_partitions != [""] ? element(local.admin_partitions,count) : "default" ]
+}
+
+output "eval_vars" {
+  value = <<EOF
+export CONSUL_HTTP_ADDR="https://${trimsuffix(google_dns_record_set.dns.name,".")}:8501"
+export CONSUL_HTTP_TOKEN="${var.consul_bootstrap_token}"
+export CONSUL_HTTP_SSL_VERIFY=false
+export NOMAD_ADDR="http://${trimsuffix(google_dns_record_set.dns.name,".")}:4646"
+export NOMAD_TOKEN="${random_uuid.nomad_bootstrap.result}"
+EOF
   sensitive = true
 }

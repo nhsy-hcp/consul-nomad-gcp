@@ -18,7 +18,7 @@ echo "deb [arch=amd64 signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gp
 
 sudo apt-get update
 
-sudo apt-get install consul-terraform-sync-enterprise
+sudo apt-get install consul-terraform-sync-enterprise jq -y 
 
 
 
@@ -71,14 +71,21 @@ node_meta = {
   gcp_zone = "$(curl -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/zone" | awk -F / '{print $NF}')"
 }
 encrypt = "$(cat $CONSUL_DIR/keygen.out)"
-# ca_file = "$CONSUL_DIR/tls/consul-agent-ca.pem"
-# cert_file = "$CONSUL_DIR/tls/$DC-server-consul-0.pem"
-# key_file = "/etc/consul.d/tls/$DC-server-consul-0-key.pem"
-# verify_incoming = true
-# verify_outgoing = true
-# verify_server_hostname = true
-retry_join = ["provider=gce project_name=${gcp_project} tag_value=${tag}"]
+retry_join = ["provider=gce project_name=${gcp_project} tag_value=${tag} zone_pattern=\"${zone}\""]
 license_path = "$CONSUL_DIR/license.hclic"
+
+tls {
+   defaults {
+      ca_file = "$CONSUL_DIR/tls/consul-agent-ca.pem"
+
+      verify_incoming = false
+      verify_outgoing = true
+   }
+   internal_rpc {
+      verify_server_hostname = false
+   }
+}
+
 
 
 acl = {
@@ -88,9 +95,9 @@ acl = {
   tokens = {
     initial_management = "${bootstrap_token}"
     agent = "${bootstrap_token}"
+    dns = "${bootstrap_token}"
   }
 }
-
 
 audit {
   enabled = true
@@ -106,16 +113,20 @@ audit {
   }
 }
 
-client_addr = "0.0.0.0"
-advertise_addr = "$PRIVATE_IP"
-
-connect {
-  enabled = true
+reporting {
+  license {
+    enabled = false
+  }
 }
 
+
+client_addr = "0.0.0.0"
+bind_addr = "$PRIVATE_IP"
+
 ports {
- grpc = 8502
- grpc_tls = 8503
+  https = 8501
+  grpc = 8502
+  grpc_tls = 8503
 }
 
 

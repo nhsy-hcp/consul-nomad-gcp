@@ -57,12 +57,12 @@ resource "google_compute_address" "client_addr" {
 # Create firewall rules
 
 resource "google_compute_firewall" "default" {
-  name    = "hashi-rules"
+  name    = "hashi-rules-${random_id.server.dec}"
   network = google_compute_network.network.name
 
   allow {
     protocol = "tcp"
-    ports    = ["80","443","8500","8501","8502","8503","22","8300","8301","8400","8302","8600","4646","4647","4648","8443"]
+    ports    = ["80","443","8500","8501","8502","8503","22","8300","8301","8400","8302","8600","4646","4647","4648","8443","8080"]
   }
   allow {
     protocol = "udp"
@@ -74,7 +74,7 @@ resource "google_compute_firewall" "default" {
 }
 # These are internal rules for communication between the nodes internally
 resource "google_compute_firewall" "internal" {
-  name    = "hashi-internal-rules"
+  name    = "hashi-internal-rules-${random_id.server.dec}"
   network = google_compute_network.network.name
 
   allow {
@@ -103,16 +103,16 @@ resource "google_compute_region_backend_service" "default" {
   }
 }
 
-resource "google_compute_region_backend_service" "hashicups" {
+resource "google_compute_region_backend_service" "apps" {
   name          = "${var.cluster_name}-hashicups"
   health_checks = [
-    google_compute_region_health_check.default.id
+    google_compute_region_health_check.apps.id
   ]
   region = var.gcp_region
   protocol = "TCP"
   load_balancing_scheme = "EXTERNAL"
   backend {
-    group  = google_compute_instance_group.hashi_group.id
+    group  = google_compute_instance_group.app_group.id
     # balancing_mode = "CONNECTION"
   }
 }
@@ -134,13 +134,16 @@ resource "google_compute_region_health_check" "default" {
   timeout_sec        = 1
   region = var.gcp_region
 
-  http_health_check {
+  # http_health_check {
+  #   port = "8500"
+  #   request_path = "/ui"
+  # }
+  tcp_health_check {
     port = "8500"
-    request_path = "/ui"
   }
 }
 
-resource "google_compute_region_health_check" "hashicups" {
+resource "google_compute_region_health_check" "apps" {
   name = "health-check-hashicups"
   check_interval_sec = 1
   timeout_sec        = 1
@@ -166,7 +169,7 @@ resource "google_compute_forwarding_rule" "global-lb" {
 resource "google_compute_forwarding_rule" "clients-lb" {
   name       = "clients-lb"
   #  ip_address = google_compute_address.global-ip.address
-  backend_service = google_compute_region_backend_service.hashicups.id
+  backend_service = google_compute_region_backend_service.apps.id
   region = var.gcp_region
   ip_protocol = "TCP"
   ports = ["80","443","8443","8080"]
@@ -181,12 +184,28 @@ data "google_compute_image" "my_image" {
   project = var.gcp_project
 }
 
+# Let's take the image from HCP Packer
+data "hcp_packer_version" "hardened-source" {
+  count = var.use_hcp_packer ? 1 : 0
+  bucket_name  = var.hcp_packer_bucket
+  channel_name = var.hcp_packer_channel
+}
+
+data "hcp_packer_artifact" "consul-nomad" {
+  count              = var.use_hcp_packer ? 1 : 0
+  bucket_name         = var.hcp_packer_bucket
+  version_fingerprint = data.hcp_packer_version.hardened-source[0].fingerprint
+  platform            = "gce"
+  region              = var.hcp_packer_region
+}
+
+
 data "google_dns_managed_zone" "doormat_dns_zone" {
   name = var.dns_zone
 }
 
 resource "google_dns_record_set" "dns" {
-  name = "hashi.${data.google_dns_managed_zone.doormat_dns_zone.dns_name}"
+  name = "hashi-sec.${data.google_dns_managed_zone.doormat_dns_zone.dns_name}"
   type = "A"
   ttl  = 300
 
