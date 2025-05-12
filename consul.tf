@@ -1,10 +1,13 @@
 # Let's wait for the Consul server instances to be ready before we proceed with the rest of the configuration.
 resource "null_resource" "wait_for_service" {
-  depends_on = [google_compute_instance_from_template.vm_server]
-
+  # depends_on = [google_compute_instance_from_template.vm_server]
+  depends_on = [
+    google_compute_region_instance_group_manager.hashi-group,
+    google_compute_region_per_instance_config.with_script      
+  ]
   provisioner "local-exec" {
     command = <<EOF
-until $(curl -k --output /dev/null --silent --head --fail https://${trimsuffix(google_dns_record_set.dns.name,".")}:8501); do
+until $(curl -k --output /dev/null --silent --head --fail https://${trimsuffix(local.fqdn,".")}:8501); do
   printf '...'
   sleep 5
 done

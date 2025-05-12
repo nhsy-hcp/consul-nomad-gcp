@@ -98,13 +98,15 @@ resource "google_compute_region_backend_service" "default" {
   protocol = "TCP"
   load_balancing_scheme = "EXTERNAL"
   backend {
-    group  = google_compute_instance_group.hashi_group.id
+    # group  = google_compute_instance_group.hashi_group.id
+    group = google_compute_region_instance_group_manager.hashi-group.instance_group
     # balancing_mode = "CONNECTION"
   }
 }
 
 resource "google_compute_region_backend_service" "apps" {
-  name          = "${var.cluster_name}-hashicups"
+  count = length(google_compute_region_instance_group_manager.clients-group)
+  name          = "${var.cluster_name}-apigw-${count.index}"
   health_checks = [
     google_compute_region_health_check.apps.id
   ]
@@ -112,7 +114,8 @@ resource "google_compute_region_backend_service" "apps" {
   protocol = "TCP"
   load_balancing_scheme = "EXTERNAL"
   backend {
-    group  = google_compute_instance_group.app_group.id
+    # group  = google_compute_instance_group.app_group.id
+    group = google_compute_region_instance_group_manager.clients-group[count.index].instance_group
     # balancing_mode = "CONNECTION"
   }
 }
@@ -120,10 +123,10 @@ resource "google_compute_region_backend_service" "apps" {
 # resource "google_compute_target_pool" "vm-pool" {
 #   name = "instance-pool"
 
-#   instances = google_compute_instance_from_template.tpl-vm.*.name
+#   instances = google_compute_instance_from_template.vm_clients.*.self_link
 
 #   health_checks = [
-#     google_compute_http_health_check.default.name,
+#     google_compute_http_health_check.apps.id,
 #   ]
 # }
 
@@ -144,16 +147,23 @@ resource "google_compute_region_health_check" "default" {
 }
 
 resource "google_compute_region_health_check" "apps" {
-  name = "health-check-hashicups"
+  name = "health-check-apigw"
   check_interval_sec = 1
   timeout_sec        = 1
   region = var.gcp_region
 
   http_health_check {
-    port = "80"
+    port = "8080"
     request_path = "/"
   }
 }
+# resource "google_compute_http_health_check" "apps" {
+#   name               = "default"
+#   request_path       = "/"
+#   check_interval_sec = 1
+#   timeout_sec        = 1
+#   port = 8080
+# }
 
 resource "google_compute_forwarding_rule" "global-lb" {
   name       = "hashistack-lb"
@@ -166,10 +176,13 @@ resource "google_compute_forwarding_rule" "global-lb" {
   ports = ["4646-4648","8500-8503","8600","9701-9702","8443"]
 }
 
+# The number of LBs for the apps will be equal to the number of region instance groups (one per admin partition)
 resource "google_compute_forwarding_rule" "clients-lb" {
+  count = length(google_compute_region_backend_service.apps)
   name       = "clients-lb"
   #  ip_address = google_compute_address.global-ip.address
-  backend_service = google_compute_region_backend_service.apps.id
+  backend_service = google_compute_region_backend_service.apps[count.index].id
+  # target    = google_compute_target_pool.vm-pool.self_link
   region = var.gcp_region
   ip_protocol = "TCP"
   ports = ["80","443","8443","8080"]
@@ -201,15 +214,17 @@ data "hcp_packer_artifact" "consul-nomad" {
 
 
 data "google_dns_managed_zone" "doormat_dns_zone" {
+  count = var.dns_zone != "" ? 1 : 0
   name = var.dns_zone
 }
 
 resource "google_dns_record_set" "dns" {
-  name = "hashi-sec.${data.google_dns_managed_zone.doormat_dns_zone.dns_name}"
+  count = var.dns_zone != "" ? 1 : 0
+  name = "hashi-${var.cluster_name}.${data.google_dns_managed_zone.doormat_dns_zone[0].dns_name}"
   type = "A"
   ttl  = 300
 
-  managed_zone = data.google_dns_managed_zone.doormat_dns_zone.name
+  managed_zone = data.google_dns_managed_zone.doormat_dns_zone[0].name
 
   rrdatas = [google_compute_forwarding_rule.global-lb.ip_address]
 }

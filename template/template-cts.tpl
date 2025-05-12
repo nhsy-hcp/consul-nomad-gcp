@@ -71,7 +71,7 @@ node_meta = {
   gcp_zone = "$(curl -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/zone" | awk -F / '{print $NF}')"
 }
 encrypt = "$(cat $CONSUL_DIR/keygen.out)"
-retry_join = ["provider=gce project_name=${gcp_project} tag_value=${tag} zone_pattern=\"${zone}\""]
+retry_join = ["provider=gce project_name=${gcp_project} tag_value=${tag} zone_pattern=\"${zone}-[a-z]\""]
 license_path = "$CONSUL_DIR/license.hclic"
 
 tls {

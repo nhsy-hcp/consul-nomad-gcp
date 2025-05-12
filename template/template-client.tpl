@@ -3,6 +3,7 @@
 CONSUL_DIR="/etc/consul.d"
 
 NODE_HOSTNAME=$(curl -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/hostname)
+INSTANCE_NAME=$(curl -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/name)
 PUBLIC_IP=$(curl -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)
 PRIVATE_IP=$(curl -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip)
 DC="${dc_name}"
@@ -69,14 +70,14 @@ echo "==> Generating Consul configs"
 sudo tee $CONSUL_DIR/consul.hcl > /dev/null <<EOF
 datacenter = "$DC"
 data_dir = "/opt/consul"
-node_name = "${node_name}"
+node_name = "$INSTANCE_NAME-${node_name}"
 node_meta = {
   hostname = "$(hostname)"
-  gcp_instance = "$(curl "http://metadata.google.internal/computeMetadata/v1/instance/name" -H "Metadata-Flavor: Google")"
+  gcp_instance = "$INSTANCE_NAME"
   gcp_zone = "$(curl -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/zone" | awk -F / '{print $NF}')"
 }
 encrypt = "$(cat $CONSUL_DIR/keygen.out)"
-retry_join = ["provider=gce project_name=${gcp_project} tag_value=${tag} zone_pattern=\"${zone}\""]
+retry_join = ["provider=gce project_name=${gcp_project} tag_value=${tag} zone_pattern=\"${zone}-[a-z]\""]
 license_path = "$CONSUL_DIR/license.hclic"
 log_level = "DEBUG"
 

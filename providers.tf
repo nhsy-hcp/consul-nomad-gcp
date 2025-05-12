@@ -2,7 +2,7 @@ terraform {
   required_providers {
     google = {
       source = "hashicorp/google"
-      version = "4.25.0"
+      version = "5.28.0"
     }
     consul = {
       source = "hashicorp/consul"
@@ -22,14 +22,13 @@ provider "google" {
 }
 
 provider "consul" {
-  address = "${trimsuffix(google_dns_record_set.dns.name,".")}:8501"
+  address = "${local.fqdn}:8501"
+  # address = "${trimsuffix(google_dns_record_set.dns.name,".")}:8501"
   scheme = "https"
   insecure_https = true
   token = var.consul_bootstrap_token
 }
-provider "hcp" {
-  project_id = var.hcp_project_id
-}
+provider "hcp" {}
 # provider "azure" {
 #   version = ">=2.0.0"
 #   features {}
