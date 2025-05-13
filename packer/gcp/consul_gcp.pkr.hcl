@@ -26,6 +26,10 @@ variable "image_family" {
 variable "source_image_family" {
   default = "debian-11"
 }
+variable "hcp_bucket_name" {
+  description = "HCP Bucket Name"
+  default = "consul-nomad"
+}
 
 locals {
   consul_version = regex_replace(var.consul_version,"\\.+|\\+","-")
@@ -48,7 +52,7 @@ source "googlecompute" "consul_nomad" {
 
 build {
   hcp_packer_registry {
-    bucket_name = "consul-nomad"
+    bucket_name = var.hcp_bucket_name
     description = <<EOT
 Image for Consul, Nomad and Vault
     EOT

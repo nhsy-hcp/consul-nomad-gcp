@@ -152,9 +152,12 @@ resource "google_compute_region_health_check" "apps" {
   timeout_sec        = 1
   region = var.gcp_region
 
-  http_health_check {
+  # http_health_check {
+  #   port = "8080"
+  #   request_path = "/"
+  # }
+  tcp_health_check {
     port = "8080"
-    request_path = "/"
   }
 }
 # resource "google_compute_http_health_check" "apps" {

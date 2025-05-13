@@ -85,6 +85,6 @@ For example, if you have a DNS zone called "my-example-zone" with the domain `ex
 
 This Terraform configuration will ouput the values to configure your terminal to connect to the Nomad and Consul clusters deployed. You just need to use the `eval_vars` output:
 ```bash
-eval $(terraform output -r eval_vars)
+eval $(terraform output -raw eval_vars)
 ```
 
