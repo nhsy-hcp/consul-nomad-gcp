@@ -19,7 +19,7 @@ data "google_compute_zones" "available" {
 # Creating the instance template to be use from instances
 resource "google_compute_instance_template" "instance_template" {
   # count = var.numnodes
-  name_prefix  = "hashistack-servers-"
+  name_prefix  = "${var.cluster_name}-servers-"
   machine_type = var.gcp_instance
   region       = var.gcp_region
 
@@ -52,7 +52,7 @@ resource "google_compute_instance_template" "instance_template_clients" {
   # Let's create a count, so we create a template for each consul partition, and use only one if consul_partitions is empty
   count = length(var.consul_partitions) != 0 ? length(var.consul_partitions) : 1
 
-  name_prefix  = "hashistack-clients-${length(var.consul_partitions) != 0 ? var.consul_partitions[count.index] : "default"}-"
+  name_prefix  = "${var.cluster_name}-clients-${length(var.consul_partitions) != 0 ? var.consul_partitions[count.index] : "default"}-"
   machine_type = var.gcp_instance
   region       = var.gcp_region
 
@@ -103,7 +103,7 @@ resource "google_compute_instance_template" "instance_template_clients" {
 resource "google_compute_instance_from_template" "vm_cts" {
   count = var.enable_cts ? 1 : 0
 
-  name = "vm-cts-${random_id.server.dec}"
+  name = "${var.cluster_name}-cts-${random_id.default.dec}"
   # zone = var.gcp_zone
   zone = element(var.gcp_zones, count.index)
 
@@ -142,7 +142,7 @@ resource "google_compute_region_instance_group_manager" "hashi-group" {
   depends_on = [
     google_compute_instance_template.instance_template
   ]
-  name = "${var.cluster_name}-server-igm"
+  name = "${var.cluster_name}-server-mig"
 
   base_instance_name        = "hashi-server"
   region                    = var.gcp_region
@@ -232,7 +232,7 @@ resource "google_compute_region_per_instance_config" "with_script" {
 
   region                        = google_compute_region_instance_group_manager.hashi-group.region
   region_instance_group_manager = google_compute_region_instance_group_manager.hashi-group.name
-  name                          = "hashi-server-${count.index}-${random_id.server.dec}"
+  name                          = "${var.cluster_name}-server-${count.index}-${random_id.default.dec}"
   preserved_state {
     # internal_ip {
     #   interface_name = "nic0"
@@ -249,7 +249,7 @@ resource "google_compute_region_per_instance_config" "with_script" {
         nomad_license      = var.nomad_license,
         zone               = var.gcp_region,
         bootstrap_token    = var.consul_bootstrap_token,
-        node_name          = "server-${count.index}",
+        node_name          = "${var.cluster_name}-server-${count.index}",
         nomad_token        = random_uuid.nomad_bootstrap.result,
         nomad_bootstrapper = count.index == var.numnodes - 1 ? true : false
       })
@@ -267,8 +267,8 @@ resource "google_compute_region_instance_group_manager" "clients-group" {
     google_compute_instance_template.instance_template_clients
   ]
   count                     = length(var.consul_partitions) != 0 ? length(var.consul_partitions) : 1
-  name                      = "${var.cluster_name}-clients-igm-${count.index}"
-  base_instance_name        = length(var.consul_partitions) != 0 ? "hashi-clients-${var.consul_partitions[count.index]}" : "hashi-clients"
+  name                      = "${var.cluster_name}-clients-mig-${count.index}"
+  base_instance_name        = length(var.consul_partitions) != 0 ? "${var.cluster_name}-clients-${var.consul_partitions[count.index]}" : "${var.cluster_name}-clients"
   region                    = var.gcp_region
   distribution_policy_zones = slice(data.google_compute_zones.available.names, 0, 3)
 
