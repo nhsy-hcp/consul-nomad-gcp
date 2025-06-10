@@ -4,9 +4,9 @@ resource "random_uuid" "nomad_bootstrap" {
 
 locals {
   # We concatenate the default partition with the list of partitions to create the instances including the default partition
-  admin_partitions = distinct(concat(["default"],var.consul_partitions))
-  vm_image = var.use_hcp_packer ? data.hcp_packer_artifact.consul-nomad[0].external_identifier : data.google_compute_image.my_image.self_link
-  fqdn = var.dns_zone != "" ? "${trimsuffix(google_dns_record_set.dns[0].name,".")}" : "${google_compute_address.server_addr[0].address}"
+  admin_partitions = distinct(concat(["default"], var.consul_partitions))
+  vm_image         = var.use_hcp_packer ? data.hcp_packer_artifact.consul-nomad[0].external_identifier : data.google_compute_image.my_image.self_link
+  fqdn             = var.dns_zone != "" ? "${trimsuffix(google_dns_record_set.dns[0].name, ".")}" : "${google_compute_address.server_addr[0].address}"
 
 }
 # Let's get the zones from the region
@@ -23,12 +23,12 @@ resource "google_compute_instance_template" "instance_template" {
   machine_type = var.gcp_instance
   region       = var.gcp_region
 
-  tags = [var.cluster_name,var.owner,"nomad-${var.cluster_name}"]
+  tags = [var.cluster_name, var.owner, "nomad-${var.cluster_name}"]
 
   // boot disk
   disk {
     source_image = local.vm_image
-    device_name = "consul-${var.cluster_name}"
+    device_name  = "consul-${var.cluster_name}"
     # source = google_compute_region_disk.vault_disk.name
   }
   network_interface {
@@ -56,12 +56,12 @@ resource "google_compute_instance_template" "instance_template_clients" {
   machine_type = var.gcp_instance
   region       = var.gcp_region
 
-  tags = [var.cluster_name,var.owner,"nomad-${var.cluster_name}"]
+  tags = [var.cluster_name, var.owner, "nomad-${var.cluster_name}"]
 
   // boot disk
   disk {
     source_image = local.vm_image
-    device_name = "consul-${var.cluster_name}"
+    device_name  = "consul-${var.cluster_name}"
     # source = google_compute_region_disk.vault_disk.name
   }
   network_interface {
@@ -76,21 +76,21 @@ resource "google_compute_instance_template" "instance_template_clients" {
     scopes = ["cloud-platform", "compute-rw", "compute-ro", "userinfo-email", "storage-ro"]
   }
 
-  metadata_startup_script = templatefile("${path.module}/template/template-client.tpl",{
-    dc_name = var.cluster_name,
-    gcp_project = var.gcp_project,
-    tag = var.cluster_name,
-    consul_license = var.consul_license,
-    nomad_license = var.nomad_license,
+  metadata_startup_script = templatefile("${path.module}/template/template-client.tpl", {
+    dc_name         = var.cluster_name,
+    gcp_project     = var.gcp_project,
+    tag             = var.cluster_name,
+    consul_license  = var.consul_license,
+    nomad_license   = var.nomad_license,
     bootstrap_token = var.consul_bootstrap_token,
-    zone = var.gcp_region,
-    node_name = "clients-${count.index}",
-    partition = var.consul_partitions != [""] ? element(local.admin_partitions,count.index) : "default"
+    zone            = var.gcp_region,
+    node_name       = "clients-${count.index}",
+    partition       = var.consul_partitions != [""] ? element(local.admin_partitions, count.index) : "default"
   })
   labels = {
     node = "client-${count.index}"
   }
-  
+
 
   lifecycle {
     create_before_destroy = true
@@ -116,15 +116,15 @@ resource "google_compute_instance_from_template" "vm_cts" {
   }
 
   # The template used is just an own demo example that won't work by default, but it is just to show how to use the template
-  metadata_startup_script = templatefile("${path.module}/template/template-cts.tpl",{
-    dc_name = var.cluster_name,
-    gcp_project = var.gcp_project,
-    tag = var.cluster_name,
-    consul_license = var.consul_license,
+  metadata_startup_script = templatefile("${path.module}/template/template-cts.tpl", {
+    dc_name         = var.cluster_name,
+    gcp_project     = var.gcp_project,
+    tag             = var.cluster_name,
+    consul_license  = var.consul_license,
     bootstrap_token = var.consul_bootstrap_token,
-    node_name = "client-cts",
-    tfc_token = var.tfc_token,
-    zone = var.gcp_region
+    node_name       = "client-cts",
+    tfc_token       = var.tfc_token,
+    zone            = var.gcp_region
   })
 
   labels = {
@@ -144,9 +144,9 @@ resource "google_compute_region_instance_group_manager" "hashi-group" {
   ]
   name = "${var.cluster_name}-server-igm"
 
-  base_instance_name         = "hashi-server"
-  region                     = var.gcp_region
-  distribution_policy_zones  = slice(data.google_compute_zones.available.names, 0, 3)
+  base_instance_name        = "hashi-server"
+  region                    = var.gcp_region
+  distribution_policy_zones = slice(data.google_compute_zones.available.names, 0, 3)
 
   version {
     instance_template = google_compute_instance_template.instance_template.self_link
@@ -157,7 +157,7 @@ resource "google_compute_region_instance_group_manager" "hashi-group" {
       component = "server"
     }
     labels = {
-      mesh = "consul"
+      mesh      = "consul"
       scheduler = "nomad"
     }
   }
@@ -168,14 +168,14 @@ resource "google_compute_region_instance_group_manager" "hashi-group" {
   }
 
   update_policy {
-    type  = "OPPORTUNISTIC"
+    type = "OPPORTUNISTIC"
     # type = "PROACTIVE"
-    minimal_action = "REPLACE"
+    minimal_action               = "REPLACE"
     instance_redistribution_type = "NONE"
     # replacement_method           = "RECREATE"
     max_surge_fixed = 0
     # Fixed updatePolicy.maxUnavailable for regional managed instance group has to be either 0 or at least equal to the number of zones in the region.
-    max_unavailable_fixed = max(length(data.google_compute_zones.available.names),floor(var.numnodes / 2))
+    max_unavailable_fixed = max(length(data.google_compute_zones.available.names), floor(var.numnodes / 2))
   }
 
 
@@ -230,9 +230,9 @@ resource "google_compute_region_instance_group_manager" "hashi-group" {
 resource "google_compute_region_per_instance_config" "with_script" {
   count = var.numnodes
 
-  region = google_compute_region_instance_group_manager.hashi-group.region
+  region                        = google_compute_region_instance_group_manager.hashi-group.region
   region_instance_group_manager = google_compute_region_instance_group_manager.hashi-group.name
-  name = "hashi-server-${count.index}-${random_id.server.dec}"
+  name                          = "hashi-server-${count.index}-${random_id.server.dec}"
   preserved_state {
     # internal_ip {
     #   interface_name = "nic0"
@@ -241,16 +241,16 @@ resource "google_compute_region_per_instance_config" "with_script" {
     #   }
     # }
     metadata = {
-      startup-script = templatefile("${path.module}/template/template.tpl",{
-        dc_name = var.cluster_name,
-        gcp_project = var.gcp_project,
-        tag = var.cluster_name,
-        consul_license = var.consul_license,
-        nomad_license = var.nomad_license,
-        zone = var.gcp_region,
-        bootstrap_token = var.consul_bootstrap_token,
-        node_name = "server-${count.index}",
-        nomad_token = random_uuid.nomad_bootstrap.result,
+      startup-script = templatefile("${path.module}/template/template.tpl", {
+        dc_name            = var.cluster_name,
+        gcp_project        = var.gcp_project,
+        tag                = var.cluster_name,
+        consul_license     = var.consul_license,
+        nomad_license      = var.nomad_license,
+        zone               = var.gcp_region,
+        bootstrap_token    = var.consul_bootstrap_token,
+        node_name          = "server-${count.index}",
+        nomad_token        = random_uuid.nomad_bootstrap.result,
         nomad_bootstrapper = count.index == var.numnodes - 1 ? true : false
       })
       instance_template = google_compute_instance_template.instance_template.self_link
@@ -266,11 +266,11 @@ resource "google_compute_region_instance_group_manager" "clients-group" {
   depends_on = [
     google_compute_instance_template.instance_template_clients
   ]
-  count = length(var.consul_partitions) != 0 ? length(var.consul_partitions) : 1
-  name = "${var.cluster_name}-clients-igm-${count.index}"
-  base_instance_name = length(var.consul_partitions) != 0 ? "hashi-clients-${var.consul_partitions[count.index]}" : "hashi-clients"
-  region                     = var.gcp_region
-  distribution_policy_zones  = slice(data.google_compute_zones.available.names, 0, 3)
+  count                     = length(var.consul_partitions) != 0 ? length(var.consul_partitions) : 1
+  name                      = "${var.cluster_name}-clients-igm-${count.index}"
+  base_instance_name        = length(var.consul_partitions) != 0 ? "hashi-clients-${var.consul_partitions[count.index]}" : "hashi-clients"
+  region                    = var.gcp_region
+  distribution_policy_zones = slice(data.google_compute_zones.available.names, 0, 3)
 
   version {
     instance_template = google_compute_instance_template.instance_template_clients[count.index].self_link
@@ -281,24 +281,24 @@ resource "google_compute_region_instance_group_manager" "clients-group" {
       component = "client"
     }
     labels = {
-      mesh = "consul"
+      mesh      = "consul"
       scheduler = "nomad"
     }
   }
 
   update_policy {
     # type  = "OPPORTUNISTIC"
-    type = "PROACTIVE"
-    minimal_action = "REPLACE"
+    type                         = "PROACTIVE"
+    minimal_action               = "REPLACE"
     instance_redistribution_type = "NONE"
     # max_surge_fixed = 0
     # # Fixed updatePolicy.maxUnavailable for regional managed instance group has to be either 0 or at least equal to the number of zones in the region.
     # max_unavailable_fixed = max(length(data.google_compute_zones.available.names),floor(var.numclients / 2))
-    max_surge_fixed = length(data.google_compute_zones.available.names)
+    max_surge_fixed       = length(data.google_compute_zones.available.names)
     max_unavailable_fixed = 0
   }
 
-  target_size  = var.numclients
+  target_size = var.numclients
   named_port {
     name = "frontend"
     port = 8080

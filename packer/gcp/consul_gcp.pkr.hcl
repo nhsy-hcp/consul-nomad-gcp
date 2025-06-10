@@ -49,19 +49,18 @@ source "googlecompute" "consul_nomad" {
   # image_licenses = ["projects/vm-options/global/licenses/enable-vmx"]
 }
 
-
 build {
-  hcp_packer_registry {
-    bucket_name = var.hcp_bucket_name
-    description = <<EOT
-Image for Consul, Nomad and Vault
-    EOT
-    bucket_labels = {
-      "hashicorp"    = "Vault,Consul,Nomad",
-      "owner" = "dcanadillas",
-      "platform" = "hashicorp",
-    }
-  }
+#   hcp_packer_registry {
+#     bucket_name = var.hcp_bucket_name
+#     description = <<EOT
+# Image for Consul, Nomad and Vault
+#     EOT
+#     bucket_labels = {
+#       "hashicorp"    = "Vault,Consul,Nomad",
+#       "owner" = "dcanadillas",
+#       "platform" = "hashicorp",
+#     }
+#   }
   sources = ["sources.googlecompute.consul_nomad"]
   provisioner "shell" {
     scripts = ["../consul_prep.sh","../nomad_prep.sh"]

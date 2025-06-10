@@ -24,7 +24,7 @@ resource "google_compute_network" "network" {
 }
 
 
-# Subnet creation
+#Subnet creation
 resource "google_compute_subnetwork" "subnet" {
   name = "${var.cluster_name}-subnetwork"
 
@@ -35,7 +35,7 @@ resource "google_compute_subnetwork" "subnet" {
 
 # Create an ip address for the load balancer
 resource "google_compute_address" "global-ip" {
-  name = "lb-ip"
+  name   = "lb-ip"
   region = var.gcp_region
 }
 
@@ -62,15 +62,15 @@ resource "google_compute_firewall" "default" {
 
   allow {
     protocol = "tcp"
-    ports    = ["80","443","8500","8501","8502","8503","22","8300","8301","8400","8302","8600","4646","4647","4648","8443","8080"]
+    ports    = ["80", "443", "8500", "8501", "8502", "8503", "22", "8300", "8301", "8400", "8302", "8600", "4646", "4647", "4648", "8443", "8080"]
   }
   allow {
     protocol = "udp"
-    ports = ["8600","8301","8302"]
+    ports    = ["8600", "8301", "8302"]
   }
 
   source_ranges = ["0.0.0.0/0"]
-  target_tags   = [var.cluster_name,"nomad-${var.cluster_name}","consul-${var.cluster_name}"]
+  target_tags   = [var.cluster_name, "nomad-${var.cluster_name}", "consul-${var.cluster_name}"]
 }
 # These are internal rules for communication between the nodes internally
 resource "google_compute_firewall" "internal" {
@@ -84,18 +84,18 @@ resource "google_compute_firewall" "internal" {
     protocol = "udp"
   }
 
-  source_tags = [var.cluster_name,"nomad-${var.cluster_name}","consul-${var.cluster_name}"]
-  target_tags   = [var.cluster_name,"nomad-${var.cluster_name}","consul-${var.cluster_name}"]
-}     
+  source_tags = [var.cluster_name, "nomad-${var.cluster_name}", "consul-${var.cluster_name}"]
+  target_tags = [var.cluster_name, "nomad-${var.cluster_name}", "consul-${var.cluster_name}"]
+}
 
 # Creating Load Balancing with different required resources
 resource "google_compute_region_backend_service" "default" {
-  name          = "${var.cluster_name}-backend-service"
+  name = "${var.cluster_name}-backend-service"
   health_checks = [
     google_compute_region_health_check.default.id
   ]
-  region = var.gcp_region
-  protocol = "TCP"
+  region                = var.gcp_region
+  protocol              = "TCP"
   load_balancing_scheme = "EXTERNAL"
   backend {
     # group  = google_compute_instance_group.hashi_group.id
@@ -106,12 +106,12 @@ resource "google_compute_region_backend_service" "default" {
 
 resource "google_compute_region_backend_service" "apps" {
   count = length(google_compute_region_instance_group_manager.clients-group)
-  name          = "${var.cluster_name}-apigw-${count.index}"
+  name  = "${var.cluster_name}-apigw-${count.index}"
   health_checks = [
     google_compute_region_health_check.apps.id
   ]
-  region = var.gcp_region
-  protocol = "TCP"
+  region                = var.gcp_region
+  protocol              = "TCP"
   load_balancing_scheme = "EXTERNAL"
   backend {
     # group  = google_compute_instance_group.app_group.id
@@ -135,7 +135,7 @@ resource "google_compute_region_health_check" "default" {
   # request_path       = "/"
   check_interval_sec = 1
   timeout_sec        = 1
-  region = var.gcp_region
+  region             = var.gcp_region
 
   # http_health_check {
   #   port = "8500"
@@ -147,10 +147,10 @@ resource "google_compute_region_health_check" "default" {
 }
 
 resource "google_compute_region_health_check" "apps" {
-  name = "health-check-apigw"
+  name               = "health-check-apigw"
   check_interval_sec = 1
   timeout_sec        = 1
-  region = var.gcp_region
+  region             = var.gcp_region
 
   # http_health_check {
   #   port = "8080"
@@ -169,31 +169,27 @@ resource "google_compute_region_health_check" "apps" {
 # }
 
 resource "google_compute_forwarding_rule" "global-lb" {
-  name       = "hashistack-lb"
+  name = "hashistack-lb"
   # ip_address = google_compute_global_address.global-ip.address
   ip_address = google_compute_address.global-ip.address
   # target     = google_compute_target_pool.vm-pool.self_link
   backend_service = google_compute_region_backend_service.default.id
-  region = var.gcp_region
-  ip_protocol = "TCP"
-  ports = ["4646-4648","8500-8503","8600","9701-9702","8443"]
+  region          = var.gcp_region
+  ip_protocol     = "TCP"
+  ports           = ["4646-4648", "8500-8503", "8600", "9701-9702", "8443"]
 }
 
 # The number of LBs for the apps will be equal to the number of region instance groups (one per admin partition)
 resource "google_compute_forwarding_rule" "clients-lb" {
   count = length(google_compute_region_backend_service.apps)
-  name       = "clients-lb"
+  name  = "clients-lb"
   #  ip_address = google_compute_address.global-ip.address
   backend_service = google_compute_region_backend_service.apps[count.index].id
   # target    = google_compute_target_pool.vm-pool.self_link
-  region = var.gcp_region
+  region      = var.gcp_region
   ip_protocol = "TCP"
-  ports = ["80","443","8443","8080"]
+  ports       = ["80", "443", "8443", "8080"]
 }
-
-
-
-
 
 data "google_compute_image" "my_image" {
   family  = var.image_family
@@ -202,13 +198,13 @@ data "google_compute_image" "my_image" {
 
 # Let's take the image from HCP Packer
 data "hcp_packer_version" "hardened-source" {
-  count = var.use_hcp_packer ? 1 : 0
+  count        = var.use_hcp_packer ? 1 : 0
   bucket_name  = var.hcp_packer_bucket
   channel_name = var.hcp_packer_channel
 }
 
 data "hcp_packer_artifact" "consul-nomad" {
-  count              = var.use_hcp_packer ? 1 : 0
+  count               = var.use_hcp_packer ? 1 : 0
   bucket_name         = var.hcp_packer_bucket
   version_fingerprint = data.hcp_packer_version.hardened-source[0].fingerprint
   platform            = "gce"
@@ -218,14 +214,14 @@ data "hcp_packer_artifact" "consul-nomad" {
 
 data "google_dns_managed_zone" "doormat_dns_zone" {
   count = var.dns_zone != "" ? 1 : 0
-  name = var.dns_zone
+  name  = var.dns_zone
 }
 
 resource "google_dns_record_set" "dns" {
   count = var.dns_zone != "" ? 1 : 0
-  name = "hashi-${var.cluster_name}.${data.google_dns_managed_zone.doormat_dns_zone[0].dns_name}"
-  type = "A"
-  ttl  = 300
+  name  = "${var.cluster_name}.${data.google_dns_managed_zone.doormat_dns_zone[0].dns_name}"
+  type  = "A"
+  ttl   = 300
 
   managed_zone = data.google_dns_managed_zone.doormat_dns_zone[0].name
 

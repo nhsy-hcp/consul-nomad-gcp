@@ -1,5 +1,6 @@
 variable "gcp_region" {
   description = "Google Cloud region"
+  default     = "europe-west1"
 }
 # variable "gcp_zone" {
 #   description = "Google Cloud region"
@@ -12,12 +13,12 @@ variable "gcp_region" {
 # }
 variable "gcp_zones" {
   description = "Zones to spread the clients. This is a list of zones"
-  type = list(string)
-  default = ["europe-west1-c"]
+  type        = list(string)
+  default     = ["europe-west1-c"]
   # Let's do a validation to check that the zones are within the region
   validation {
-    condition     = alltrue([for zone in var.gcp_zones : contains(regexall("[a-z]+-[a-z]+[0-1]-[a-z]",zone),zone)])
-    error_message = "The GCP zones ${join(",",var.gcp_zones)} needs to be a valid one."
+    condition     = alltrue([for zone in var.gcp_zones : contains(regexall("[a-z]+-[a-z]+[0-1]-[a-z]", zone), zone)])
+    error_message = "The GCP zones ${join(",", var.gcp_zones)} needs to be a valid one."
   }
 }
 variable "gcp_project" {
@@ -35,11 +36,11 @@ variable "gcp_instance" {
 # }
 variable "numnodes" {
   description = "number of server nodes"
-  default = 3
+  default     = 3
 }
 variable "numclients" {
   description = "number of client nodes"
-  default = 2
+  default     = 2
 }
 variable "cluster_name" {
   description = "Name of the cluster"
@@ -49,7 +50,7 @@ variable "owner" {
 }
 variable "server" {
   description = "Prefix for server names"
-  default = "consul-server"
+  default     = "consul-server"
 }
 variable "consul_license" {
   description = "Consul Enterprise license text"
@@ -59,12 +60,12 @@ variable "nomad_license" {
 }
 variable "tfc_token" {
   description = "Terraform Cloud token to use for CTS"
-  default = ""
+  default     = ""
 }
 
 variable "consul_bootstrap_token" {
   description = "Terraform Cloud token to use for CTS"
-  default = "Consu43v3r"
+  default     = "Consu43v3r"
 }
 
 variable "image_family" {
@@ -73,38 +74,39 @@ variable "image_family" {
 
 variable "dns_zone" {
   description = "An already existing DNS zone in your GCP project"
-  default = null
+  default     = null
 }
 
 variable "consul_partitions" {
   description = "List of Consul Admin Partitions"
-  type = list(string)
-  default = []
+  type        = list(string)
+  default     = []
 }
 
 variable "use_hcp_packer" {
   description = "Use HCP Packer to store images"
-  default = false
+  default     = false
 }
 
 variable "hcp_packer_bucket" {
   description = "Bucket name for HCP Packer"
-  default = "consul-nomad"  
+  default     = "consul-nomad"
 }
 
 variable "hcp_packer_channel" {
   description = "Channel for HCP Packer"
-  default = "latest"
+  default     = "latest"
 }
 
 variable "hcp_packer_region" {
   description = "Region for HCP Packer"
-  default = "europe-west1-c"
+  default     = "europe-west1-c"
 }
 variable "hcp_project_id" {
   description = "HCP Project ID"
 }
+
 variable "enable_cts" {
   description = "Set it to true to deploy a node for CTS"
-  default = "false"
+  default     = "false"
 }
