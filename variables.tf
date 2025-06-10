@@ -115,3 +115,20 @@ variable "subnetwork_cidr" {
   description = "CIDR for the subnetwork"
   default     = "10.2.0.0/16"
 }
+
+variable "nomad_client_disk_size" {
+  description = "Disk size for Nomad nodes"
+  type        = number
+  default     = 50
+}
+
+variable "nomad_client_machine_type" {
+  description = "Machine type for nodes"
+  default     = "e2-standard-4"
+}
+
+variable "nomad_client_preemptible" {
+  description = "Use preemptible VMs for Nomad clients"
+  type        = bool
+  default     = true
+}

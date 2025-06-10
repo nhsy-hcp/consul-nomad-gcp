@@ -5,10 +5,11 @@ This is a WIP...
 
 ## Requirements
 * An existing Google Cloud Platform project with permissions to create the different compute instances resources. This repo has been tested with a service account with the following roles in GCP:
-  * `role/owner`
+  * `roles/compute.admin`
+  * `roles/dns.admin`
   * `roles/iam.serviceAccountUser`
-  * `roles/container.admin`
-  * `roles/secretmanager.secretAccessor`
+  * `roles/viewer`
+
 * A HashiCorp Terraform CLI with version 1.10+. Also you can use [HCP Terraform](https://cloud.hashicorp.com/products/terraform), as done with this repository tests
 * HashiCorp Packer to build the images used by the Terraform configuration. Optionally you can use [HCP Packer](https://developer.hashicorp.com/hcp/docs/packer)
  to manage your images. In that case you would need to define the `hcp_packer_*` Terraform variables.
