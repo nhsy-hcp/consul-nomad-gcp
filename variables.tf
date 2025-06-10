@@ -110,3 +110,8 @@ variable "enable_cts" {
   description = "Set it to true to deploy a node for CTS"
   default     = "false"
 }
+
+variable "subnetwork_cidr" {
+  description = "CIDR for the subnetwork"
+  default     = "10.2.0.0/16"
+}
