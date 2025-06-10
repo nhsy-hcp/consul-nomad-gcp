@@ -1,0 +1,8 @@
+gcp_project_id      = "__REPLACE__"
+github_organization = "__REPLACE__"
+github_repository   = "__REPLACE__"
+tfc_organization    = "__REPLACE__"
+tfc_project         = "__REPLACE__"
+tfc_workspace       = "__REPLACE__"
+
+tfc_variables = {}
