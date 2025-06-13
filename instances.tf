@@ -63,7 +63,7 @@ resource "google_compute_instance_template" "instance_template_clients" {
     source_image = local.vm_image
     device_name  = "consul-${var.cluster_name}"
     # source = google_compute_region_disk.vault_disk.name
-    size_gb = var.nomad_client_disk_size
+    disk_size_gb = var.nomad_client_disk_size
   }
   network_interface {
     subnetwork = google_compute_subnetwork.subnet.self_link
