@@ -225,7 +225,7 @@ resource "google_dns_record_set" "dns" {
 
 resource "google_dns_record_set" "ingress" {
   count = var.dns_zone != "" ? 1 : 0
-  name  = "ingress-${var.cluster_name}.${data.google_dns_managed_zone.doormat_dns_zone[0].dns_name}"
+  name  = "ingress.${var.cluster_name}.${data.google_dns_managed_zone.doormat_dns_zone[0].dns_name}"
   type  = "A"
   ttl   = 300
 
