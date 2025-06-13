@@ -115,3 +115,9 @@ variable "subnetwork_cidr" {
   description = "CIDR for the subnetwork"
   default     = "10.2.0.0/16"
 }
+
+variable "nomad_client_disk_size" {
+  description = "Disk size for Nomad nodes"
+  type        = number
+  default     = 50
+}
