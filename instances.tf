@@ -301,9 +301,18 @@ resource "google_compute_region_instance_group_manager" "clients-group" {
 
   target_size = var.numclients
   named_port {
-    name = "frontend"
+    name = "http-80"
     port = 8080
   }
+  named_port {
+    name = "http-8080"
+    port = 8080
+  }
+  named_port {
+    name = "https"
+    port = 443
+  }
+
 }
 
 
