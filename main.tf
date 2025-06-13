@@ -152,7 +152,7 @@ resource "google_compute_region_health_check" "apps" {
   #   request_path = "/"
   # }
   tcp_health_check {
-    port = "8080"
+    port = "80"
   }
 }
 # resource "google_compute_http_health_check" "apps" {

@@ -312,6 +312,10 @@ resource "google_compute_region_instance_group_manager" "clients-group" {
     name = "https"
     port = 443
   }
+  named_port {
+    name = "https-8443"
+    port = 8443
+  }
 
 }
 
