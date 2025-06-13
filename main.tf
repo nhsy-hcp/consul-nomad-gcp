@@ -231,7 +231,7 @@ resource "google_dns_record_set" "ingress" {
 
   managed_zone = data.google_dns_managed_zone.doormat_dns_zone[0].name
 
-  rrdatas = [google_compute_forwarding_rule.clients-lb.ip_address]
+  rrdatas = [google_compute_forwarding_rule.clients-lb[0].ip_address]
 }
 
 
