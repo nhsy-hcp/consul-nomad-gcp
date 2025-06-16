@@ -121,3 +121,14 @@ variable "nomad_client_disk_size" {
   type        = number
   default     = 50
 }
+
+variable "nomad_client_machine_type" {
+  description = "Machine type for nodes"
+  default     = "e2-standard-4"
+}
+
+variable "nomad_client_preemptible" {
+  description = "Use preemptible VMs for Nomad clients"
+  type        = bool
+  default     = true
+}

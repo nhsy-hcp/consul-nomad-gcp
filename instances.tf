@@ -53,7 +53,7 @@ resource "google_compute_instance_template" "instance_template_clients" {
   count = length(var.consul_partitions) != 0 ? length(var.consul_partitions) : 1
 
   name_prefix  = "${var.cluster_name}-clients-${length(var.consul_partitions) != 0 ? var.consul_partitions[count.index] : "default"}-"
-  machine_type = var.gcp_instance
+  machine_type = var.nomad_client_machine_type
   region       = var.gcp_region
 
   tags = [var.cluster_name, var.owner, "nomad-${var.cluster_name}"]
@@ -64,6 +64,9 @@ resource "google_compute_instance_template" "instance_template_clients" {
     device_name  = "consul-${var.cluster_name}"
     # source = google_compute_region_disk.vault_disk.name
     disk_size_gb = var.nomad_client_disk_size
+  }
+  scheduling {
+    preemptible  = var.nomad_client_preemptible
   }
   network_interface {
     subnetwork = google_compute_subnetwork.subnet.self_link
