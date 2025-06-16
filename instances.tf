@@ -67,6 +67,7 @@ resource "google_compute_instance_template" "instance_template_clients" {
   }
   scheduling {
     preemptible  = var.nomad_client_preemptible
+    automatic_restart = var.nomad_client_preemptible ? false : true
   }
   network_interface {
     subnetwork = google_compute_subnetwork.subnet.self_link
