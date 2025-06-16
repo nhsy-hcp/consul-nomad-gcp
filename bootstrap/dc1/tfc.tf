@@ -5,15 +5,15 @@ data "tfe_github_app_installation" "default" {
   name = var.github_organization
 }
 
-# data "tfe_project" "default" {
-#   name         = var.tfc_project
-#   organization = var.tfc_organization
-# }
-
-resource "tfe_project" "default" {
+data "tfe_project" "default" {
   name         = var.tfc_project
   organization = var.tfc_organization
 }
+
+# resource "tfe_project" "default" {
+#   name         = var.tfc_project
+#   organization = var.tfc_organization
+# }
 
 # Runs in this workspace will be automatically authenticated
 # to GCP with the permissions set in the GCP policy.
@@ -24,10 +24,10 @@ resource "tfe_workspace" "default" {
   auto_apply          = true
   description         = "Terraform Cloud workspace for GCP Workload Identity integration"
   organization        = var.tfc_organization
-  project_id          = tfe_project.default.id
+  project_id          = data.tfe_project.default.id
   speculative_enabled = true
   tag_names           = ["gcp", "workload-identity"]
-  terraform_version   = "~> 1.10.0"
+  terraform_version   = ">= 1.10.0"
   trigger_patterns    = ["*.tf", "*.tfvars"]
 
   vcs_repo {

@@ -8,6 +8,8 @@ locals {
   vm_image         = var.use_hcp_packer ? data.hcp_packer_artifact.consul-nomad[0].external_identifier : data.google_compute_image.my_image.self_link
   fqdn             = var.dns_zone != "" ? "${trimsuffix(google_dns_record_set.dns[0].name, ".")}" : "${google_compute_address.server_addr[0].address}"
 
+  client_vm_image = data.google_compute_image.client_image.self_link
+
 }
 # Let's get the zones from the region
 data "google_compute_zones" "available" {
@@ -48,7 +50,7 @@ resource "google_compute_instance_template" "instance_template" {
   }
 }
 
-resource "google_compute_instance_template" "instance_template_clients" {
+resource "google_compute_instance_template" "nomad_clients" {
   # Let's create a count, so we create a template for each consul partition, and use only one if consul_partitions is empty
   count = length(var.consul_partitions) != 0 ? length(var.consul_partitions) : 1
 
@@ -60,8 +62,9 @@ resource "google_compute_instance_template" "instance_template_clients" {
 
   // boot disk
   disk {
-    source_image = local.vm_image
-    device_name  = "consul-${var.cluster_name}"
+    source_image = local.client_vm_image
+    # source_image = local.vm_image
+    device_name = "consul-${var.cluster_name}"
     # source = google_compute_region_disk.vault_disk.name
     disk_size_gb = var.nomad_client_disk_size
   }
@@ -82,27 +85,84 @@ resource "google_compute_instance_template" "instance_template_clients" {
   }
 
   metadata_startup_script = templatefile("${path.module}/template/template-client.tpl", {
-    dc_name         = var.cluster_name,
-    gcp_project     = var.gcp_project,
-    tag             = var.cluster_name,
-    consul_license  = var.consul_license,
-    nomad_license   = var.nomad_license,
-    bootstrap_token = var.consul_bootstrap_token,
-    zone            = var.gcp_region,
-    node_name       = "clients-${count.index}",
-    partition       = var.consul_partitions != [""] ? element(local.admin_partitions, count.index) : "default"
+    dc_name            = var.cluster_name,
+    gcp_project        = var.gcp_project,
+    tag                = var.cluster_name,
+    consul_license     = var.consul_license,
+    nomad_license      = var.nomad_license,
+    bootstrap_token    = var.consul_bootstrap_token,
+    consul_encrypt_key = random_bytes.consul_encrypt_key.base64,
+    zone               = var.gcp_region,
+    node_name          = "clients-${count.index}",
+    partition          = var.consul_partitions != [""] ? element(local.admin_partitions, count.index) : "default"
   })
   labels = {
     node = "client-${count.index}"
   }
-
 
   lifecycle {
     create_before_destroy = true
   }
 }
 
+resource "google_compute_instance_template" "nomad_gpu_clients" {
+  # Let's create a count, so we create a template for each consul partition, and use only one if consul_partitions is empty
+  count = length(var.consul_partitions) != 0 ? length(var.consul_partitions) : 1
 
+  name_prefix  = "${var.cluster_name}-clients-gpu-${length(var.consul_partitions) != 0 ? var.consul_partitions[count.index] : "default"}-"
+  machine_type = var.nomad_client_machine_type
+  region       = var.gcp_region
+
+  tags = [var.cluster_name, var.owner, "nomad-${var.cluster_name}"]
+
+  // boot disk
+  disk {
+    source_image = local.client_vm_image
+    # source_image = local.vm_image
+    device_name = "consul-${var.cluster_name}"
+    # source = google_compute_region_disk.vault_disk.name
+    disk_size_gb = var.nomad_client_disk_size
+  }
+  scheduling {
+    on_host_maintenance = "TERMINATE"
+    automatic_restart   = false
+  }
+  guest_accelerator {
+    type  = "nvidia-tesla-t4"
+    count = 1
+  }
+  network_interface {
+    subnetwork = google_compute_subnetwork.subnet.self_link
+
+    access_config {
+      # nat_ip = google_compute_address.server_addr.address
+    }
+  }
+  service_account {
+    email  = data.google_service_account.owner_project.email
+    scopes = ["cloud-platform", "compute-rw", "compute-ro", "userinfo-email", "storage-ro"]
+  }
+
+  metadata_startup_script = templatefile("${path.module}/template/template-client-gpu.tpl", {
+    dc_name            = var.cluster_name,
+    gcp_project        = var.gcp_project,
+    tag                = var.cluster_name,
+    consul_license     = var.consul_license,
+    nomad_license      = var.nomad_license,
+    bootstrap_token    = var.consul_bootstrap_token,
+    consul_encrypt_key = random_bytes.consul_encrypt_key.base64,
+    zone               = var.gcp_region,
+    node_name          = "client-gpu-${count.index}",
+    partition          = var.consul_partitions != [""] ? element(local.admin_partitions, count.index) : "default"
+  })
+  labels = {
+    node = "client-gpu-${count.index}"
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
 
 # This is the instance template for a node that will be used for Consul Terraform Sync if we deploy it
 resource "google_compute_instance_from_template" "vm_cts" {
@@ -112,7 +172,7 @@ resource "google_compute_instance_from_template" "vm_cts" {
   # zone = var.gcp_zone
   zone = element(var.gcp_zones, count.index)
 
-  source_instance_template = google_compute_instance_template.instance_template_clients[0].id
+  source_instance_template = google_compute_instance_template.nomad_clients[0].id
 
   // Override fields from instance template
   network_interface {
@@ -122,14 +182,15 @@ resource "google_compute_instance_from_template" "vm_cts" {
 
   # The template used is just an own demo example that won't work by default, but it is just to show how to use the template
   metadata_startup_script = templatefile("${path.module}/template/template-cts.tpl", {
-    dc_name         = var.cluster_name,
-    gcp_project     = var.gcp_project,
-    tag             = var.cluster_name,
-    consul_license  = var.consul_license,
-    bootstrap_token = var.consul_bootstrap_token,
-    node_name       = "client-cts",
-    tfc_token       = var.tfc_token,
-    zone            = var.gcp_region
+    dc_name            = var.cluster_name,
+    gcp_project        = var.gcp_project,
+    tag                = var.cluster_name,
+    consul_license     = var.consul_license,
+    bootstrap_token    = var.consul_bootstrap_token,
+    consul_encrypt_key = random_bytes.consul_encrypt_key.base64,
+    node_name          = "client-cts",
+    tfc_token          = var.tfc_token,
+    zone               = var.gcp_region
   })
 
   labels = {
@@ -254,6 +315,7 @@ resource "google_compute_region_per_instance_config" "with_script" {
         nomad_license      = var.nomad_license,
         zone               = var.gcp_region,
         bootstrap_token    = var.consul_bootstrap_token,
+        consul_encrypt_key = random_bytes.consul_encrypt_key.base64,
         node_name          = "${var.cluster_name}-server-${count.index}",
         nomad_token        = random_uuid.nomad_bootstrap.result,
         nomad_bootstrapper = count.index == var.numnodes - 1 ? true : false
@@ -269,7 +331,7 @@ resource "google_compute_region_per_instance_config" "with_script" {
 resource "google_compute_region_instance_group_manager" "clients-group" {
   # We create an instance group for the clients, so we can use the same instance template for all the instances. And we create a groupt per partition.
   depends_on = [
-    google_compute_instance_template.instance_template_clients
+    google_compute_instance_template.nomad_clients
   ]
   count                     = length(var.consul_partitions) != 0 ? length(var.consul_partitions) : 1
   name                      = "${var.cluster_name}-clients-mig-${count.index}"
@@ -278,7 +340,7 @@ resource "google_compute_region_instance_group_manager" "clients-group" {
   distribution_policy_zones = slice(data.google_compute_zones.available.names, 0, 3)
 
   version {
-    instance_template = google_compute_instance_template.instance_template_clients[count.index].self_link
+    instance_template = google_compute_instance_template.nomad_clients[count.index].self_link
   }
 
   all_instances_config {
@@ -306,7 +368,7 @@ resource "google_compute_region_instance_group_manager" "clients-group" {
   target_size = var.numclients
   named_port {
     name = "http-80"
-    port = 8080
+    port = 80
   }
   named_port {
     name = "http-8080"
@@ -320,9 +382,48 @@ resource "google_compute_region_instance_group_manager" "clients-group" {
     name = "https-8443"
     port = 8443
   }
-
 }
 
+# Creating an instance group region for the clients
+resource "google_compute_region_instance_group_manager" "nomad_gpu_clients" {
+  # We create an instance group for the clients, so we can use the same instance template for all the instances. And we create a groupt per partition.
+  depends_on = [
+    google_compute_instance_template.nomad_gpu_clients
+  ]
+  count                     = length(var.consul_partitions) != 0 ? length(var.consul_partitions) : 1
+  name                      = "${var.cluster_name}-clients-gpu-mig-${count.index}"
+  base_instance_name        = length(var.consul_partitions) != 0 ? "${var.cluster_name}-clients-gpu-${var.consul_partitions[count.index]}" : "${var.cluster_name}-clients-gpu"
+  region                    = var.gcp_region
+  distribution_policy_zones = slice(data.google_compute_zones.available.names, 0, 3)
+
+  version {
+    instance_template = google_compute_instance_template.nomad_gpu_clients[count.index].self_link
+  }
+
+  all_instances_config {
+    metadata = {
+      component = "client"
+    }
+    labels = {
+      mesh      = "consul"
+      scheduler = "nomad"
+    }
+  }
+
+  update_policy {
+    # type  = "OPPORTUNISTIC"
+    type                         = "PROACTIVE"
+    minimal_action               = "REPLACE"
+    instance_redistribution_type = "NONE"
+    # max_surge_fixed = 0
+    # # Fixed updatePolicy.maxUnavailable for regional managed instance group has to be either 0 or at least equal to the number of zones in the region.
+    # max_unavailable_fixed = max(length(data.google_compute_zones.available.names),floor(var.numclients / 2))
+    max_surge_fixed       = length(data.google_compute_zones.available.names)
+    max_unavailable_fixed = 0
+  }
+
+  target_size = 1 #var.numclients
+}
 
 
 # ---------------------------------------------------- #
