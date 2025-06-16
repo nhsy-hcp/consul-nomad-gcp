@@ -76,7 +76,8 @@ node_meta = {
   gcp_instance = "$INSTANCE_NAME"
   gcp_zone = "$(curl -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/zone" | awk -F / '{print $NF}')"
 }
-encrypt = "$(cat $CONSUL_DIR/keygen.out)"
+#encrypt = "$(cat $CONSUL_DIR/keygen.out)"
+encrypt = "${consul_encrypt_key}"
 retry_join = ["provider=gce project_name=${gcp_project} tag_value=${tag} zone_pattern=\"${zone}-[a-z]\""]
 license_path = "$CONSUL_DIR/license.hclic"
 log_level = "DEBUG"
@@ -231,10 +232,16 @@ consul {
 
 EOF
 
+mkdir -p /srv/traefik
 
 sudo tee $NOMAD_DIR/client.hcl > /dev/null <<EOF
 client {
   enabled = true
+  node_pool = "default"
+  host_volume "traefik" {
+    path      = "/srv/traefik"
+    read_only = false
+  }
 }
 EOF
 

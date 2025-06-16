@@ -52,3 +52,7 @@ EOF
   # EOF
   sensitive = true
 }
+
+output "ingress_dashboard_url" {
+  value = try("https://${trimsuffix(google_dns_record_set.ingress[0].name, ".")}:8443/dashboard/", null)
+}

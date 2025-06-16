@@ -9,7 +9,7 @@ variable "gcp_zone" {
   default = "europe-west1-c"
 }
 variable "image" {
-  default = "consul-nomad"
+  default = "consul-nomad-client-gpu"
 }
 variable "consul_version" {
   default = "1.12.1"
@@ -24,7 +24,7 @@ variable "image_family" {
   default = "hashistack"
 }
 variable "source_image_family" {
-  default = "debian-11"
+  default = "debian-12"
 }
 variable "hcp_bucket_name" {
   description = "HCP Bucket Name"

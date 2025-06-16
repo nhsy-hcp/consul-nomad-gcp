@@ -3,6 +3,7 @@
 CONSUL_DIR="/etc/consul.d"
 
 NODE_HOSTNAME=$(curl -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/hostname)
+INSTANCE_NAME=$(curl -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/name)
 PUBLIC_IP=$(curl -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)
 PRIVATE_IP=$(curl -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip)
 DC="${dc_name}"
@@ -11,6 +12,22 @@ NOMAD_LICENSE="${nomad_license}"
 NOMAD_DIR="/etc/nomad.d"
 NOMAD_URL="https://releases.hashicorp.com/nomad"
 CNI_PLUGIN_VERSION="v1.5.1"
+
+
+# ---- Adding some extra packages for CTS ----
+curl --fail --silent --show-error --location https://apt.releases.hashicorp.com/gpg | \
+  gpg --dearmor | \
+  sudo dd of=/usr/share/keyrings/hashicorp-archive-keyring.gpg
+
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
+ sudo tee -a /etc/apt/sources.list.d/hashicorp.list
+
+sudo apt-get update
+
+sudo apt-get install consul-terraform-sync-enterprise jq -y
+
+
+
 
 
 # ---- Check directories ----
@@ -29,8 +46,11 @@ else
     sudo chown -R consul:consul /opt/consul
 fi
 
+
+
+
 # Creating a directory for audit
-sudo mkdir -p /tmp/consul/audit
+sudo mkdir -p /opt/consul/audit
 
 
 # ---- Enterprise Licenses ----
@@ -39,10 +59,10 @@ echo $NOMAD_LICENSE | sudo tee $NOMAD_DIR/license.hclic > /dev/null
 
 # ---- Preparing certificates ----
 echo "==> Adding server certificates to /etc/consul.d"
-consul tls cert create -server -dc $DC \
-    -ca "$CONSUL_DIR"/tls/consul-agent-ca.pem \
-    -key  "$CONSUL_DIR"/tls/consul-agent-ca-key.pem
-sudo mv "$DC"-server-consul-*.pem "$CONSUL_DIR"/tls/
+# consul tls cert create -server -dc $DC \
+#     -ca "$CONSUL_DIR"/tls/consul-agent-ca.pem \
+#     -key  "$CONSUL_DIR"/tls/consul-agent-ca-key.pem
+# sudo mv "$DC"-server-consul-*.pem "$CONSUL_DIR"/tls/
 
 # ----------------------------------
 echo "==> Generating Consul configs"
@@ -50,10 +70,10 @@ echo "==> Generating Consul configs"
 sudo tee $CONSUL_DIR/consul.hcl > /dev/null <<EOF
 datacenter = "$DC"
 data_dir = "/opt/consul"
-node_name = "${node_name}"
+node_name = "$INSTANCE_NAME-${node_name}"
 node_meta = {
   hostname = "$(hostname)"
-  gcp_instance = "$(curl "http://metadata.google.internal/computeMetadata/v1/instance/name" -H "Metadata-Flavor: Google")"
+  gcp_instance = "$INSTANCE_NAME"
   gcp_zone = "$(curl -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/zone" | awk -F / '{print $NF}')"
 }
 #encrypt = "$(cat $CONSUL_DIR/keygen.out)"
@@ -62,24 +82,20 @@ retry_join = ["provider=gce project_name=${gcp_project} tag_value=${tag} zone_pa
 license_path = "$CONSUL_DIR/license.hclic"
 log_level = "DEBUG"
 
+
 tls {
    defaults {
       ca_file = "$CONSUL_DIR/tls/consul-agent-ca.pem"
-      cert_file = "$CONSUL_DIR/tls/$DC-server-consul-0.pem"
-      key_file = "/etc/consul.d/tls/$DC-server-consul-0-key.pem"
+
       verify_incoming = false
       verify_outgoing = true
-      verify_server_hostname = false
    }
    internal_rpc {
-      verify_server_hostname = true
+      verify_server_hostname = false
    }
 }
 
 
-auto_encrypt {
-  allow_tls = true
-}
 
 acl = {
   enabled = true
@@ -113,19 +129,12 @@ reporting {
 }
 
 
-EOF
+partition ="${partition}"
 
-sudo tee $CONSUL_DIR/server.hcl > /dev/null <<EOF
-server = true
-bootstrap_expect = 3
-
-ui = true
 client_addr = "0.0.0.0"
 bind_addr = "$PRIVATE_IP"
+recursors = ["8.8.8.8","1.1.1.1"]
 
-connect {
-  enabled = true
-}
 
 ports {
   https = 8501
@@ -133,8 +142,8 @@ ports {
   grpc_tls = 8503
 }
 
-
 EOF
+
 
 echo "==> Creating the Consul service"
 sudo tee /usr/lib/systemd/system/consul.service > /dev/null <<EOF
@@ -161,9 +170,10 @@ WantedBy=multi-user.target
 EOF
 
 # Let's set some permissions to read certificates from Consul
-echo "==> Changing permissions"
+echo "==> Changing permissions for Consul"
 sudo chown -R consul:consul "$CONSUL_DIR"/tls
 sudo chown -R consul:consul /tmp/consul/audit
+
 
 # ---------------
 
@@ -191,6 +201,17 @@ curl -L -o cni-plugins.tgz "https://github.com/containernetworking/plugins/relea
 sudo mkdir -p /opt/cni/bin
 sudo tar -C /opt/cni/bin -xzf cni-plugins.tgz
 
+# Installing Consul CNI
+export ARCH_CNI="$( [ $(uname -m) = aarch64 ] && echo arm64 || echo amd64)"
+curl -L -o consul-cni.zip "https://releases.hashicorp.com/consul-cni/1.5.1/consul-cni_1.5.1_linux_$ARCH_CNI".zip
+sudo unzip consul-cni.zip -d /opt/cni/bin -x LICENSE.txt
+
+sudo mkdir -p /opt/nomad/plugins
+
+# create the host volume folders for Open Web UI, optional
+sudo mkdir -p /srv/openwebui-ollama
+sudo mkdir -p /srv/openwebui-data
+
 
 # ----------------------------------
 echo "==> Generating Nomad configs"
@@ -198,12 +219,12 @@ echo "==> Generating Nomad configs"
 sudo tee $NOMAD_DIR/nomad.hcl > /dev/null <<EOF
 datacenter = "$DC"
 data_dir = "/opt/nomad"
+plugin_dir = "/opt/nomad/plugins"
 acl  {
   enabled = true
 }
 consul {
   token = "${bootstrap_token}"
-  enabled = true
 
   service_identity {
     aud = ["consul.io"]
@@ -215,27 +236,27 @@ consul {
     ttl = "1h"
   }
 }
-EOF
 
-sudo tee $NOMAD_DIR/server.hcl > /dev/null <<EOF
-server {
-  enabled = true
-  bootstrap_expect = 3
-  server_join {
-    retry_join = ["provider=gce project_name=${gcp_project} tag_value=${tag}"]
-  }
-  license_path = "$NOMAD_DIR/license.hclic"
-}
 EOF
 
 sudo tee $NOMAD_DIR/client.hcl > /dev/null <<EOF
 client {
-  enabled = false
+  enabled = true
+  node_pool = "gpu"
+  host_volume "openwebui-ollama" {
+    path      = "/srv/openwebui-ollama"
+    read_only = false
+  }
+  host_volume "openwebui-data" {
+    path      = "/srv/openwebui-data"
+    read_only = false
+  }
 }
-EOF
-
-sudo tee $NOMAD_DIR/nomad_bootstrap > /dev/null <<EOF
-${nomad_token}
+plugin "nomad-device-nvidia" {
+  config {
+    enabled = true
+  }
+}
 EOF
 
 echo "==> Creating the Nomad service"
@@ -253,11 +274,6 @@ After=network-online.target
 #After=consul.service
 
 [Service]
-
-# Nomad server should be run as the nomad user. Nomad clients
-# should be run as root
-User=nomad
-Group=nomad
 
 ExecReload=/bin/kill -HUP $MAINPID
 ExecStart=/usr/bin/nomad agent -config $NOMAD_DIR
@@ -295,6 +311,46 @@ EOF
 echo "==> Changing permissions"
 sudo chown -R nomad:nomad "$NOMAD_DIR"/tls
 
+# ---------------
+
+# ----- CTS CONFIG --------
+
+# CTS NIA config
+sudo useradd --system --home /etc/consul-nia.d --shell /bin/false consul-nia
+sudo mkdir -p /opt/consul-nia && sudo mkdir -p /etc/consul-nia.d
+
+echo "==> Changing permissions for Consul Terraform Sync"
+sudo chown --recursive consul-nia:consul-nia /opt/consul-nia && \
+  sudo chmod -R 0750 /opt/consul-nia && \
+  sudo chown --recursive consul-nia:consul-nia /etc/consul-nia.d && \
+  sudo chmod -R 0750 /etc/consul-nia.d
+
+echo "==> Creating the CTS service"
+sudo tee /usr/lib/systemd/system/consul-terraform-sync.service > /dev/null <<EOF
+[Unit]
+Description="HashiCorp Consul-Terraform-Sync - A Network Infrastructure Automation solution"
+Documentation=https://www.consul.io/docs/nia
+Requires=network-online.target
+After=network-online.target
+ConditionFileNotEmpty=/etc/consul-nia.d/config.hcl
+
+[Service]
+EnvironmentFile=/etc/consul-nia.d/consul-nia.env
+User=consul-nia
+Group=consul-nia
+ExecStart=/usr/bin/consul-terraform-sync start -config-dir=/etc/consul-nia.d/
+ExecReload=/bin/kill --signal HUP $MAINPID
+KillMode=process
+KillSignal=SIGTERM
+Restart=on-failure
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+
+EOF
+
+# ---------------
 
 # INIT SERVICES
 
@@ -304,25 +360,17 @@ sudo systemctl start consul
 echo "==> Starting Nomad..."
 sudo systemctl start nomad
 
+#Configuring DNS resolution for Consul
+sudo mkdir -p /etc/systemd/resolved.conf.d
 
+sudo tee /etc/systemd/resolved.conf.d/consul.conf <<EOF
+[Resolve]
+DNS=127.0.0.1
+DNSSEC=false
+Domains=~consul
+EOF
 
-# We select the last node as the Nomad bootstrapper
-%{ if nomad_bootstrapper }
-# But wait for the Nomad leader to be elected
-HTTP_STATUS=$(curl -s -o /dev/null -w "%%{http_code}" http://localhost:4646/v1/status/leader)
-counter=0
-while [ $HTTP_STATUS -ne 200 ]; do
-  echo "==> Waiting for Nomad to start..."
-  sleep 10
-  HTTP_STATUS=$(curl -s -o /dev/null -w "%%{http_code}" http://localhost:4646/v1/status/leader)
-  counter=$((counter+1))
-  if [ $counter -eq 10 ]; then
-    echo "==> Nomad failed to start. Exiting..."
-    break
-  fi
-done
-echo "==> Bootstrap Nomad..."
-# sleep 20
-nomad acl bootstrap $NOMAD_DIR/nomad_bootstrap
-%{ endif }
+sudo iptables --table nat --append OUTPUT --destination localhost --protocol udp --match udp --dport 53 --jump REDIRECT --to-ports 8600
+sudo iptables --table nat --append OUTPUT --destination localhost --protocol tcp --match tcp --dport 53 --jump REDIRECT --to-ports 8600
 
+sudo systemctl restart systemd-resolved

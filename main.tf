@@ -191,6 +191,11 @@ data "google_compute_image" "my_image" {
   project = var.gcp_project
 }
 
+data "google_compute_image" "client_image" {
+  family  = "${var.image_family}-client-gpu"
+  project = var.gcp_project
+}
+
 # Let's take the image from HCP Packer
 data "hcp_packer_version" "hardened-source" {
   count        = var.use_hcp_packer ? 1 : 0
@@ -396,3 +401,7 @@ resource "google_dns_record_set" "ingress_cname" {
 #     device_name = "consul-${var.cluster_name}"
 #   }
 # }
+
+resource "random_bytes" "consul_encrypt_key" {
+  length = 32
+}
