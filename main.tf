@@ -36,14 +36,14 @@ resource "google_compute_address" "global-ip" {
 
 # External IP addresses
 resource "google_compute_address" "server_addr" {
-  count = var.numnodes
+  count = var.server_nodes
   name  = "${var.cluster_name}-server-addr-${count.index}"
   # subnetwork = google_compute_subnetwork.subnet.id
   region = var.gcp_region
 }
 
 resource "google_compute_address" "client_addr" {
-  count = var.numclients
+  count = var.nomad_clients
   name  = "${var.cluster_name}-client-addr-${count.index}"
   # subnetwork = google_compute_subnetwork.subnet.id
   region = var.gcp_region

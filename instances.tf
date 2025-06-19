@@ -241,7 +241,7 @@ resource "google_compute_region_instance_group_manager" "hashi-group" {
     # replacement_method           = "RECREATE"
     max_surge_fixed = 0
     # Fixed updatePolicy.maxUnavailable for regional managed instance group has to be either 0 or at least equal to the number of zones in the region.
-    max_unavailable_fixed = max(length(data.google_compute_zones.available.names), floor(var.numnodes / 2))
+    max_unavailable_fixed = max(length(data.google_compute_zones.available.names), floor(var.server_nodes / 2))
   }
 
 
@@ -294,7 +294,7 @@ resource "google_compute_region_instance_group_manager" "hashi-group" {
 
 # We do a stateful address for the instances, so the execution script on each instance is not the sam
 resource "google_compute_region_per_instance_config" "with_script" {
-  count = var.numnodes
+  count = var.server_nodes
 
   region                        = google_compute_region_instance_group_manager.hashi-group.region
   region_instance_group_manager = google_compute_region_instance_group_manager.hashi-group.name
@@ -318,7 +318,7 @@ resource "google_compute_region_per_instance_config" "with_script" {
         consul_encrypt_key = random_bytes.consul_encrypt_key.base64,
         node_name          = "${var.cluster_name}-server-${count.index}",
         nomad_token        = random_uuid.nomad_bootstrap.result,
-        nomad_bootstrapper = count.index == var.numnodes - 1 ? true : false
+        nomad_bootstrapper = count.index == var.server_nodes - 1 ? true : false
       })
       instance_template = google_compute_instance_template.instance_template.self_link
     }
@@ -365,7 +365,7 @@ resource "google_compute_region_instance_group_manager" "clients-group" {
     max_unavailable_fixed = 0
   }
 
-  target_size = var.numclients
+  target_size = var.nomad_clients
   named_port {
     name = "http-80"
     port = 80
@@ -422,7 +422,7 @@ resource "google_compute_region_instance_group_manager" "nomad_gpu_clients" {
     max_unavailable_fixed = 0
   }
 
-  target_size = 1 #var.numclients
+  target_size = var.nomad_gpu_clients
 }
 
 

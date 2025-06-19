@@ -31,7 +31,7 @@ output "NOMAD_TOKEN" {
 }
 
 output "partitions" {
-  value = [for count in range(var.numclients) : var.consul_partitions != [""] ? element(local.admin_partitions, count) : "default"]
+  value = [for count in range(var.nomad_clients) : var.consul_partitions != [""] ? element(local.admin_partitions, count) : "default"]
 }
 
 output "eval_vars" {
