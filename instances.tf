@@ -410,17 +410,17 @@ resource "google_compute_region_instance_group_manager" "nomad_gpu_clients" {
     }
   }
 
-  update_policy {
-    # type  = "OPPORTUNISTIC"
-    type                         = "PROACTIVE"
-    minimal_action               = "REPLACE"
-    instance_redistribution_type = "NONE"
-    # max_surge_fixed = 0
-    # # Fixed updatePolicy.maxUnavailable for regional managed instance group has to be either 0 or at least equal to the number of zones in the region.
-    # max_unavailable_fixed = max(length(data.google_compute_zones.available.names),floor(var.numclients / 2))
-    max_surge_fixed       = length(data.google_compute_zones.available.names)
-    max_unavailable_fixed = 0
-  }
+  # update_policy {
+  #   # type  = "OPPORTUNISTIC"
+  #   type                         = "PROACTIVE"
+  #   minimal_action               = "REPLACE"
+  #   instance_redistribution_type = "NONE"
+  #   # max_surge_fixed = 0
+  #   # # Fixed updatePolicy.maxUnavailable for regional managed instance group has to be either 0 or at least equal to the number of zones in the region.
+  #   # max_unavailable_fixed = max(length(data.google_compute_zones.available.names),floor(var.numclients / 2))
+  #   max_surge_fixed       = length(data.google_compute_zones.available.names)
+  #   max_unavailable_fixed = 0
+  # }
 
   target_size = 1 #var.numclients
 }
