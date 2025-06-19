@@ -392,7 +392,7 @@ resource "google_compute_region_instance_group_manager" "nomad_gpu_clients" {
   ]
   count                     = length(var.consul_partitions) != 0 ? length(var.consul_partitions) : 1
   name                      = "${var.cluster_name}-clients-gpu-mig-${count.index}"
-  base_instance_name        = length(var.consul_partitions) != 0 ? "${var.cluster_name}-clients-gpu-${var.consul_partitions[count.index]}" : "${var.cluster_name}-clients"
+  base_instance_name        = length(var.consul_partitions) != 0 ? "${var.cluster_name}-clients-gpu-${var.consul_partitions[count.index]}" : "${var.cluster_name}-clients-gpu"
   region                    = var.gcp_region
   distribution_policy_zones = slice(data.google_compute_zones.available.names, 0, 3)
 
