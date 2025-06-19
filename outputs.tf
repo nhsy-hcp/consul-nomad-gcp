@@ -31,7 +31,7 @@ output "NOMAD_TOKEN" {
 }
 
 output "partitions" {
-  value = [for count in range(var.numclients) : var.consul_partitions != [""] ? element(local.admin_partitions, count) : "default"]
+  value = [for count in range(var.nomad_clients) : var.consul_partitions != [""] ? element(local.admin_partitions, count) : "default"]
 }
 
 output "eval_vars" {
@@ -59,4 +59,8 @@ output "ingress_dashboard_url" {
 
 output "ingress_url" {
   value = try("https://${trimsuffix(google_dns_record_set.ingress[0].name, ".")}", null)
+}
+
+output "ingress_fqdn" {
+  value = try("${trimsuffix(google_dns_record_set.ingress[0].name, ".")}", null)
 }

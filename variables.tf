@@ -34,11 +34,11 @@ variable "gcp_instance" {
 #   description = "availability zones"
 #   type = list(string)
 # }
-variable "numnodes" {
+variable "server_nodes" {
   description = "number of server nodes"
   default     = 3
 }
-variable "numclients" {
+variable "nomad_clients" {
   description = "number of client nodes"
   default     = 2
 }
@@ -131,4 +131,9 @@ variable "nomad_client_preemptible" {
   description = "Use preemptible VMs for Nomad clients"
   type        = bool
   default     = false
+}
+
+variable "nomad_gpu_clients" {
+  description = "number of gpu client nodes"
+  default     = 0
 }

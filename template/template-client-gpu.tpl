@@ -208,7 +208,7 @@ sudo unzip consul-cni.zip -d /opt/cni/bin -x LICENSE.txt
 
 sudo mkdir -p /opt/nomad/plugins
 
-# create the host volume folders for Open Web UI, optional
+# create the host volume folders
 sudo mkdir -p /srv/openwebui-ollama
 sudo mkdir -p /srv/openwebui-data
 
