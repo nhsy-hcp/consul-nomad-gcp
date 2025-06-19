@@ -422,7 +422,7 @@ resource "google_compute_region_instance_group_manager" "nomad_gpu_clients" {
     max_unavailable_fixed = 0
   }
 
-  target_size = 0 #var.numclients
+  target_size = 1 #var.numclients
 }
 
 
