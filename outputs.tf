@@ -60,3 +60,7 @@ output "ingress_dashboard_url" {
 output "ingress_url" {
   value = try("https://${trimsuffix(google_dns_record_set.ingress[0].name, ".")}", null)
 }
+
+output "ingress_fqdn" {
+  value = try("${trimsuffix(google_dns_record_set.ingress[0].name, ".")}", null)
+}
