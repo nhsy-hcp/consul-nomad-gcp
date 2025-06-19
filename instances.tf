@@ -123,10 +123,10 @@ resource "google_compute_instance_template" "nomad_gpu_clients" {
     # source = google_compute_region_disk.vault_disk.name
     disk_size_gb = var.nomad_client_disk_size
   }
-  # scheduling {
-  #   preemptible       = var.nomad_client_preemptible
-  #   automatic_restart = var.nomad_client_preemptible ? false : true
-  # }
+  scheduling {
+    on_host_maintenance = "TERMINATE"
+    automatic_restart   = false
+  }
   guest_accelerator {
     type  = "nvidia-tesla-t4"
     count = 1
@@ -410,17 +410,17 @@ resource "google_compute_region_instance_group_manager" "nomad_gpu_clients" {
     }
   }
 
-  # update_policy {
-  #   # type  = "OPPORTUNISTIC"
-  #   type                         = "PROACTIVE"
-  #   minimal_action               = "REPLACE"
-  #   instance_redistribution_type = "NONE"
-  #   # max_surge_fixed = 0
-  #   # # Fixed updatePolicy.maxUnavailable for regional managed instance group has to be either 0 or at least equal to the number of zones in the region.
-  #   # max_unavailable_fixed = max(length(data.google_compute_zones.available.names),floor(var.numclients / 2))
-  #   max_surge_fixed       = length(data.google_compute_zones.available.names)
-  #   max_unavailable_fixed = 0
-  # }
+  update_policy {
+    # type  = "OPPORTUNISTIC"
+    type                         = "PROACTIVE"
+    minimal_action               = "REPLACE"
+    instance_redistribution_type = "NONE"
+    # max_surge_fixed = 0
+    # # Fixed updatePolicy.maxUnavailable for regional managed instance group has to be either 0 or at least equal to the number of zones in the region.
+    # max_unavailable_fixed = max(length(data.google_compute_zones.available.names),floor(var.numclients / 2))
+    max_surge_fixed       = length(data.google_compute_zones.available.names)
+    max_unavailable_fixed = 0
+  }
 
   target_size = 1 #var.numclients
 }
