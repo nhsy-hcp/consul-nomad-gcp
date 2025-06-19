@@ -109,7 +109,7 @@ resource "google_compute_instance_template" "nomad_gpu_clients" {
   # Let's create a count, so we create a template for each consul partition, and use only one if consul_partitions is empty
   count = length(var.consul_partitions) != 0 ? length(var.consul_partitions) : 1
 
-  name_prefix  = "${var.cluster_name}-clients-${length(var.consul_partitions) != 0 ? var.consul_partitions[count.index] : "default"}-"
+  name_prefix  = "${var.cluster_name}-clients-gpu-${length(var.consul_partitions) != 0 ? var.consul_partitions[count.index] : "default"}-"
   machine_type = var.nomad_client_machine_type
   region       = var.gcp_region
 
@@ -123,10 +123,10 @@ resource "google_compute_instance_template" "nomad_gpu_clients" {
     # source = google_compute_region_disk.vault_disk.name
     disk_size_gb = var.nomad_client_disk_size
   }
-  scheduling {
-    preemptible       = var.nomad_client_preemptible
-    automatic_restart = var.nomad_client_preemptible ? false : true
-  }
+  # scheduling {
+  #   preemptible       = var.nomad_client_preemptible
+  #   automatic_restart = var.nomad_client_preemptible ? false : true
+  # }
   guest_accelerator {
     type  = "nvidia-tesla-t4"
     count = 1
@@ -152,7 +152,7 @@ resource "google_compute_instance_template" "nomad_gpu_clients" {
     bootstrap_token    = var.consul_bootstrap_token,
     consul_encrypt_key = random_bytes.consul_encrypt_key.base64,
     zone               = var.gcp_region,
-    node_name          = "clients-gpu-${count.index}",
+    node_name          = "client-gpu-${count.index}",
     partition          = var.consul_partitions != [""] ? element(local.admin_partitions, count.index) : "default"
   })
   labels = {

@@ -73,6 +73,7 @@ node_meta = {
 #encrypt = "$(cat $CONSUL_DIR/keygen.out)"
 encrypt = "${consul_encrypt_key}"
 retry_join = ["provider=gce project_name=${gcp_project} tag_value=${tag} zone_pattern=\"${zone}-[a-z]\""]
+retry_join = ["provider=gce project_name=${gcp_project} tag_value=${tag} zone_pattern=\"${zone}-[a-z]\""]
 license_path = "$CONSUL_DIR/license.hclic"
 
 tls {
