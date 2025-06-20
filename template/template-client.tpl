@@ -206,6 +206,41 @@ export ARCH_CNI="$( [ $(uname -m) = aarch64 ] && echo arm64 || echo amd64)"
 curl -L -o consul-cni.zip "https://releases.hashicorp.com/consul-cni/1.5.1/consul-cni_1.5.1_linux_$ARCH_CNI".zip
 sudo unzip consul-cni.zip -d /opt/cni/bin -x LICENSE.txt
 
+wget -O /tmp/jdk-21_linux-x64_bin.deb https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb
+sudo dpkg -i /tmp/jdk-21_linux-x64_bin.deb
+java -version
+
+## install openjdk 19
+## Variables
+#JDK_VERSION=19
+#JDK_BUILD=19.0.2+7
+#JDK_TARBALL="OpenJDK19U-jdk_x64_linux_hotspot_19.0.2_7.tar.gz"
+#JDK_URL="https://github.com/adoptium/temurin19-binaries/releases/download/jdk-19.0.2+7/${JDK_TARBALL}"
+#INSTALL_DIR="/opt/jdk-19"
+#
+## Install dependencies
+#sudo apt update
+#sudo apt install -y wget tar
+#
+## Download JDK 19
+#wget -O /tmp/${JDK_TARBALL} ${JDK_URL}
+#
+## Extract to /opt
+#sudo mkdir -p ${INSTALL_DIR}
+#sudo tar -xzf /tmp/${JDK_TARBALL} --strip-components=1 -C ${INSTALL_DIR}
+#
+## Set up alternatives
+#sudo update-alternatives --install /usr/bin/java java ${INSTALL_DIR}/bin/java 1919
+#sudo update-alternatives --install /usr/bin/javac javac ${INSTALL_DIR}/bin/javac 1919
+#
+## Set JAVA_HOME (optional)
+#if ! grep -q 'JAVA_HOME' /etc/environment; then
+#    echo "JAVA_HOME=${INSTALL_DIR}" | sudo tee -a /etc/environment
+#fi
+#
+#echo "Java 19 installation complete."
+#java -version
+
 
 # ----------------------------------
 echo "==> Generating Nomad configs"
