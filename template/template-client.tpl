@@ -232,12 +232,29 @@ consul {
 
 EOF
 
-mkdir -p /srv/traefik
+# create the host volume folders
+sudo mkdir -p /srv/jupyter
+sudo mkdir -p /srv/openwebui/ollama
+sudo mkdir -p /srv/openwebui/data
+sudo mkdir -p /srv/traefik
 
 sudo tee $NOMAD_DIR/client.hcl > /dev/null <<EOF
 client {
   enabled = true
   node_pool = "default"
+
+  host_volume "jupyter" {
+    path      = "/srv/jupyter"
+    read_only = false
+  }
+  host_volume "openwebui-ollama" {
+    path      = "/srv/openwebui/ollama"
+    read_only = false
+  }
+  host_volume "openwebui-data" {
+    path      = "/srv/openwebui/data"
+    read_only = false
+  }
   host_volume "traefik" {
     path      = "/srv/traefik"
     read_only = false
