@@ -1,0 +1,185 @@
+# https://taskfile.dev
+version: '3'
+
+tasks:
+
+  all:
+    desc: Run all tasks
+    cmds:
+      - task: packer
+      - task: apply
+
+  apply:
+    desc: Deploy infrastructure
+    cmds:
+      - task: tf-init
+      - task: tf-apply
+
+  destroy:
+    desc: Destroy infrastructure
+    cmds:
+      - task: tf-destroy
+
+  clean:
+    cmds:
+      - |
+        echo GCP Project ID: {{ .GCP_PROJECT }}
+        for image in $(gcloud compute images list --project {{ .GCP_PROJECT }} --no-standard-images --format="value(NAME)"); do gcloud compute images delete --project {{ .GCP_PROJECT }} -q $image;done
+    ignore_error: true
+    vars:
+      GCP_PROJECT:
+        sh: gcloud config get-value project
+
+  packer:
+    desc: Build Packer images
+    dir: packer/gcp
+    cmds:
+      - packer init .
+      - time packer build .
+      - echo "All packer builds are complete."
+
+  packer-client:
+    desc: Build Packer images
+    dir: packer/gcp
+    cmds:
+      - packer init .
+      - time packer build -force -only=googlecompute.consul_nomad_client_gpu .
+      - echo "All packer builds are complete."
+
+  tf-init:
+    aliases: ["init", "tfi"]
+    cmds:
+      - task: tf-init-primary
+      - task: tf-init-secondary
+
+  tf-init-primary:
+    cmds:
+     - terraform workspace select primary || terraform workspace new primary
+     - terraform init -var-file=primary.tfvars
+
+  tf-init-secondary:
+    cmds:
+     - terraform workspace select secondary || terraform workspace new secondary
+     - terraform init -var-file=secondary.tfvars
+
+  tf-plan:
+    aliases: ["plan", "tfp"]
+    deps: [tf-init]
+    cmds:
+      - task: tf-plan-primary
+      - task: tf-plan-secondary
+
+  tf-plan-primary:
+    deps: [tf-init-primary]
+    cmds:
+      - terraform workspace select primary
+      - terraform plan -var-file=primary.tfvars
+
+  tf-plan-secondary:
+    deps: [tf-init-secondary]
+    cmds:
+      - terraform workspace select secondary
+      - terraform plan -var-file=secondary.tfvars
+
+  tf-apply:
+    aliases: ["apply", "tfa"]
+    deps: [tf-init]
+    cmds:
+      - task: tf-apply-primary
+      - task: tf-apply-secondary
+
+  tf-apply-primary:
+    deps: [tf-init-primary]
+    cmds:
+      - terraform workspace select primary
+      - terraform apply -auto-approve -var-file=primary.tfvars
+
+  tf-apply-secondary:
+    deps: [tf-init-secondary]
+    cmds:
+      - terraform workspace select secondary
+      - terraform apply -auto-approve -var-file=secondary.tfvars
+
+  tf-destroy:
+    aliases: ["tfd"]
+    cmds:
+      - task: tf-destroy-primary
+      - task: tf-destroy-secondary
+
+  tf-destroy-primary:
+    cmds:
+      - terraform workspace select primary
+      - terraform destroy -auto-approve -var-file=primary.tfvars
+
+  tf-destroy-secondary:
+    cmds:
+      - terraform workspace select secondary
+      - terraform destroy -auto-approve -var-file=secondary.tfvars
+
+  tf-output-dc1:
+    aliases: ["tfo1"]
+    cmds:
+      - rm terraform.tfstate || true
+      - rm backend.tf || true
+      - ln -s dc1-backend.config backend.tf
+      - terraform init
+      - terraform output
+      - terraform output -raw eval_vars
+
+  tf-output-dc2:
+    aliases: ["tfo2"]
+    cmds:
+      - rm terraform.tfstate || true
+      - rm backend.tf || true
+      - ln -s dc2-backend.config backend.tf
+      - terraform init
+      - terraform output
+      - terraform output -raw eval_vars
+
+  ui:
+    desc: Start the Consul and Nomad UI
+    cmds:
+      - |
+        eval $(terraform output -raw eval_vars)
+        open $CONSUL_HTTP_ADDR
+        nomad ui -authenticate
+        echo $NOMAD_TOKEN | pbcopy
+        echo "Nomad token copied to clipboard."
+        echo "Consul token: $CONSUL_HTTP_TOKEN"
+#    env:
+#      CONSUL_HTTP_ADDR:
+#        sh: terraform output CONSUL_HTTP_ADDR
+#      NOMAD_ADDR:
+#        sh: terraform output NOMAD_ADDR
+#      NOMAD_TOKEN:
+#        sh: terraform output -raw NOMAD_TOKEN
+
+  echoserver:
+    desc: Open the echoserver in the browser
+    cmds:
+      - open https://echoserver.{{ .ingress_fqdn }}
+    vars:
+      ingress_fqdn:
+        sh: terraform output ingress_fqdn
+
+  setup:
+    desc: Setup the environment for workload identity
+    cmds:
+      - |
+        eval $(terraform output -raw eval_vars)
+        nomad setup consul -y
+
+  run-jobs:
+    desc: Run Nomad jobs
+    cmds:
+      - |
+        eval $(terraform output -raw eval_vars)
+        nomad job run jobs/traefik.nomad
+        nomad job run jobs/echoserver.nomad
+
+  purge-jobs:
+    desc: Purge Nomad jobs
+    cmds:
+      - |
+        eval $(terraform output -raw eval_vars)
+        nomad job status -json -short | jq -r '.[].ID' | xargs -n1 echo nomad job stop

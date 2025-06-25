@@ -5,4 +5,20 @@ tfc_organization    = "__REPLACE__"
 tfc_project         = "__REPLACE__"
 tfc_workspace       = "__REPLACE__"
 
-tfc_variables = {}
+tfc_variables = {
+  gcp_project              = { value = "__REPLACE__" }
+  gcp_instance             = { value = "n2-standard-2" }
+  hcp_project_id           = { value = "__REPLACE__" }
+  server_nodes             = { value = 3 }
+  nomad_clients            = { value = 2 }
+  subnetwork_cidr          = { value = "10.64.0.0/16" }
+  gcp_sa                   = { value = "__REPLACE__" }
+  cluster_name             = { value = "dc1-hcp" }
+  owner                    = { value = "__REPLACE__" }
+  consul_license           = { value = "__REPLACE__", sensitive = true }
+  nomad_license            = { value = "__REPLACE__", sensitive = true }
+  dns_zone                 = { value = "doormat-accountid" }
+  consul_bootstrap_token   = { value = "__REPLACE__", sensitive = true }
+  HCP_CLIENT_ID            = { value = "__REPLACE__", sensitive = true, category = "env" }
+  HCP_CLIENT_SECRET        = { value = "__REPLACE__", sensitive = true, category = "env" }
+}

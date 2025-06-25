@@ -206,7 +206,8 @@ export ARCH_CNI="$( [ $(uname -m) = aarch64 ] && echo arm64 || echo amd64)"
 curl -L -o consul-cni.zip "https://releases.hashicorp.com/consul-cni/1.5.1/consul-cni_1.5.1_linux_$ARCH_CNI".zip
 sudo unzip consul-cni.zip -d /opt/cni/bin -x LICENSE.txt
 
-wget -O /tmp/jdk-21_linux-x64_bin.deb https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb
+# Installing Java 21
+wget -qO /tmp/jdk-21_linux-x64_bin.deb https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb
 sudo dpkg -i /tmp/jdk-21_linux-x64_bin.deb
 java -version
 
