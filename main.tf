@@ -8,11 +8,6 @@ resource "random_id" "default" {
   byte_length = 1
 }
 
-# Collect client config for GCP
-data "google_service_account" "owner_project" {
-  account_id = var.gcp_sa
-}
-
 ## ----- Network capabilities ------
 # VPC creation
 resource "google_compute_network" "network" {
@@ -405,4 +400,15 @@ resource "google_dns_record_set" "ingress_cname" {
 
 resource "random_bytes" "consul_encrypt_key" {
   length = 32
+}
+
+resource "google_service_account" "compute" {
+  account_id = "compute-${var.cluster_name}-${random_id.default.hex}-sa"
+}
+
+resource "google_project_iam_member" "vault" {
+  for_each = var.compute_sa_roles
+  role     = each.value
+  member   = "serviceAccount:${google_service_account.compute.email}"
+  project  = var.gcp_project
 }

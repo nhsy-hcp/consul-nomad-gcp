@@ -24,9 +24,6 @@ variable "gcp_zones" {
 variable "gcp_project" {
   description = "Cloud project"
 }
-variable "gcp_sa" {
-  description = "GCP Service Account to use for scopes"
-}
 variable "gcp_instance" {
   description = "Machine type for nodes"
 }
@@ -136,4 +133,16 @@ variable "nomad_client_preemptible" {
 variable "nomad_gpu_clients" {
   description = "number of gpu client nodes"
   default     = 0
+}
+
+variable "compute_sa_roles" {
+  type = set(string)
+  default = [
+    "roles/logging.logWriter",
+    "roles/monitoring.metricWriter",
+    "roles/monitoring.viewer",
+    "roles/stackdriver.resourceMetadata.writer",
+    "roles/compute.networkViewer",
+    "roles/storage.objectViewer",
+  ]
 }

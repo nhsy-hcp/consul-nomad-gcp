@@ -41,8 +41,8 @@ resource "google_compute_instance_template" "instance_template" {
     }
   }
   service_account {
-    email  = data.google_service_account.owner_project.email
-    scopes = ["cloud-platform", "compute-rw", "compute-ro", "userinfo-email", "storage-ro"]
+    email  = google_service_account.compute.email
+    scopes = ["cloud-platform"]
   }
 
   lifecycle {
@@ -80,8 +80,8 @@ resource "google_compute_instance_template" "nomad_clients" {
     }
   }
   service_account {
-    email  = data.google_service_account.owner_project.email
-    scopes = ["cloud-platform", "compute-rw", "compute-ro", "userinfo-email", "storage-ro"]
+    email  = google_service_account.compute.email
+    scopes = ["cloud-platform"]
   }
 
   metadata_startup_script = templatefile("${path.module}/template/template-client.tpl", {
@@ -139,8 +139,8 @@ resource "google_compute_instance_template" "nomad_gpu_clients" {
     }
   }
   service_account {
-    email  = data.google_service_account.owner_project.email
-    scopes = ["cloud-platform", "compute-rw", "compute-ro", "userinfo-email", "storage-ro"]
+    email  = google_service_account.compute.email
+    scopes = ["cloud-platform"]
   }
 
   metadata_startup_script = templatefile("${path.module}/template/template-client-gpu.tpl", {

@@ -57,7 +57,9 @@ variable "tfc_service_account_iam_roles" {
   default = [
     "roles/compute.admin",
     "roles/dns.admin",
+    "roles/iam.serviceAccountAdmin",
     "roles/iam.serviceAccountUser",
+    "roles/resourcemanager.projectIamAdmin",
     "roles/viewer",
   ]
 }
