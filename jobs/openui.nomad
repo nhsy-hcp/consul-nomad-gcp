@@ -1,4 +1,5 @@
 job "open-webui" {
+  node_pool   = "gpu"
   type        = "service"
 
   group "open-webui" {
@@ -37,7 +38,7 @@ job "open-webui" {
       }
     }
 
-    task "ollama-server" {
+    task "ollama" {
       driver = "docker"
 
       config {
@@ -46,8 +47,8 @@ job "open-webui" {
       }
 
       resources {
-        cpu = 1000 * 3 # 3 CPU cores
-        memory = 1024 * 12 # 12GB
+        cpu = 1000 * 2    # 2 CPU cores
+        memory = 1024 * 4 # 4GB
         device "nvidia/gpu" {
           count = 1
         }
@@ -60,7 +61,7 @@ job "open-webui" {
       }
       
       service {
-        name = "ollama-api"
+        name = "ollama"
         port = "api"
         check {
           type     = "tcp"
@@ -71,7 +72,7 @@ job "open-webui" {
       }
     }
 
-    task "openui" {
+    task "open-webui" {
       driver = "docker"
 
       env {
@@ -91,8 +92,8 @@ job "open-webui" {
       }
       
       resources {
-        cpu    = 1000  # 1 CPU core
-        memory = 1024 * 3 # 3GB
+        cpu    = 1000     # 1 CPU core
+        memory = 1024 * 4 # 1GB
       }
       
       volume_mount {
@@ -112,7 +113,7 @@ job "open-webui" {
         ]
         check {
           type     = "http"
-          path     = "/"
+          path     = "/health"
           port     = "http"
           interval = "10s"
           timeout  = "2s"

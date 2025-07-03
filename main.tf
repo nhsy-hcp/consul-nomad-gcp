@@ -17,6 +17,7 @@ data "google_service_account" "owner_project" {
 # VPC creation
 resource "google_compute_network" "network" {
   name = "${var.cluster_name}-network"
+    auto_create_subnetworks = false
 }
 
 #Subnet creation

@@ -232,6 +232,11 @@ sudo tee $NOMAD_DIR/client.hcl > /dev/null <<EOF
 client {
   enabled = false
 }
+telemetry {
+  publish_allocation_metrics = true
+  publish_node_metrics       = true
+  prometheus_metrics         = true
+}
 EOF
 
 sudo tee $NOMAD_DIR/nomad_bootstrap > /dev/null <<EOF

@@ -32,14 +32,20 @@ tasks:
 
   packer:
     desc: Build Packer images
+    cmds:
+      - task: packer-base
+      - task: packer-client
+
+  packer-base:
+    desc: Build base image
     dir: packer/gcp
     cmds:
       - packer init .
-      - time packer build .
+      - time packer build -only=googlecompute.consul_nomad .
       - echo "All packer builds are complete."
 
   packer-client:
-    desc: Build Packer images
+    desc: Build client images
     dir: packer/gcp
     cmds:
       - packer init .
@@ -183,3 +189,11 @@ tasks:
       - |
         eval $(terraform output -raw eval_vars)
         nomad job status -json -short | jq -r '.[].ID' | xargs -n1 echo nomad job stop
+
+  bootstrap-dc1:
+    desc: Bootstrap the dc1 HCP Terraform workspace
+    dir: bootstrap/dc1
+    cmds:
+      - terraform init
+      - terraform validate
+      - terraform apply

@@ -5,7 +5,7 @@ source "googlecompute" "consul_nomad_client_gpu" {
   source_image_family = var.image_family #var.source_image_family
   image_name = "consul-nomad-ent-${local.consul_version}-${local.nomad_version}-client-gpu"
   image_family = "${var.image_family}-client-gpu"
-  machine_type = "n1-standard-1"
+  machine_type = "n1-standard-2"
   accelerator_type = "projects/${var.gcp_project}/zones/${var.gcp_zone}/acceleratorTypes/nvidia-tesla-t4"
   accelerator_count = 1
   on_host_maintenance = "TERMINATE"
