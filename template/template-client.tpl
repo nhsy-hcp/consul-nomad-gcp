@@ -207,6 +207,12 @@ curl -L -o consul-cni.zip "https://releases.hashicorp.com/consul-cni/1.5.1/consu
 sudo unzip consul-cni.zip -d /opt/cni/bin -x LICENSE.txt
 
 ## Installing Java 21
+sudo apt install ca-certificates apt-transport-https gnupg wget -y
+wget -O - https://apt.corretto.aws/corretto.key | sudo gpg --dearmor -o /usr/share/keyrings/corretto-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/corretto-keyring.gpg] https://apt.corretto.aws stable main" | sudo tee /etc/apt/sources.list.d/corretto.list
+sudo apt update
+sudo apt install -y java-21-amazon-corretto-jdk
+
 #wget -qO /tmp/jdk-21_linux-x64_bin.deb https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb
 #sudo dpkg -i /tmp/jdk-21_linux-x64_bin.deb
 #java -version
