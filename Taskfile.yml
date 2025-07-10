@@ -148,7 +148,7 @@ tasks:
       - |
         eval $(terraform output -raw eval_vars)
         open $CONSUL_HTTP_ADDR
-        nomad ui -authenticate
+        nomad ui -authenticate -tls-skip-verify
         echo $NOMAD_TOKEN | pbcopy
         echo "Nomad token copied to clipboard."
         echo "Consul token: $CONSUL_HTTP_TOKEN"
@@ -197,3 +197,16 @@ tasks:
       - terraform init
       - terraform validate
       - terraform apply
+
+  google-cert:
+    desc: Google-managed SSL certificate status
+    cmds:
+      - gcloud compute ssl-certificates describe dc1-hcp-global-cert
+
+  job-wi:
+    desc: Run the workload identity job
+    cmds:
+      - |
+        eval $(terraform output -raw eval_vars)
+        nomad job stop -purge gcp-wi-demo || true
+        nomad job run -var gcp_project=$GCP_PROJECT -var gcp_wi_provider=$GCP_WI_PROVIDER -var gcp_service_account=$GCP_WI_SERVICE_ACCOUNT jobs/gcp-wi-demo.nomad

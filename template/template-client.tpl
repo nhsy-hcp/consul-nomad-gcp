@@ -206,6 +206,7 @@ export ARCH_CNI="$( [ $(uname -m) = aarch64 ] && echo arm64 || echo amd64)"
 curl -L -o consul-cni.zip "https://releases.hashicorp.com/consul-cni/1.5.1/consul-cni_1.5.1_linux_$ARCH_CNI".zip
 sudo unzip consul-cni.zip -d /opt/cni/bin -x LICENSE.txt
 
+
 ## Installing Java 21
 sudo apt install ca-certificates apt-transport-https gnupg wget -y
 wget -O - https://apt.corretto.aws/corretto.key | sudo gpg --dearmor -o /usr/share/keyrings/corretto-keyring.gpg
@@ -213,9 +214,6 @@ echo "deb [signed-by=/usr/share/keyrings/corretto-keyring.gpg] https://apt.corre
 sudo apt update
 sudo apt install -y java-21-amazon-corretto-jdk
 
-#wget -qO /tmp/jdk-21_linux-x64_bin.deb https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb
-#sudo dpkg -i /tmp/jdk-21_linux-x64_bin.deb
-#java -version
 
 # ----------------------------------
 echo "==> Generating Nomad configs"
@@ -239,7 +237,13 @@ consul {
     ttl = "1h"
   }
 }
-
+plugin "docker" {
+  gc {
+    image = false
+    image_delay = "1h"
+  }
+  image_pull_timeout = "15m"
+}
 EOF
 
 # create the host volume folders

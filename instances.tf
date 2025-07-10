@@ -2,15 +2,6 @@
 resource "random_uuid" "nomad_bootstrap" {
 }
 
-locals {
-  # We concatenate the default partition with the list of partitions to create the instances including the default partition
-  admin_partitions = distinct(concat(["default"], var.consul_partitions))
-  vm_image         = var.use_hcp_packer ? data.hcp_packer_artifact.consul-nomad[0].external_identifier : data.google_compute_image.my_image.self_link
-  fqdn             = var.dns_zone != "" ? "${trimsuffix(google_dns_record_set.dns[0].name, ".")}" : "${google_compute_address.server_addr[0].address}"
-
-  client_vm_image = data.google_compute_image.client_image.self_link
-
-}
 # Let's get the zones from the region
 data "google_compute_zones" "available" {
   region = var.gcp_region
@@ -253,7 +244,7 @@ resource "google_compute_region_instance_group_manager" "hashi-group" {
     port = 8500
   }
   named_port {
-    name = "consul-sec"
+    name = "consul-https"
     port = 8501
   }
   named_port {
@@ -273,7 +264,7 @@ resource "google_compute_region_instance_group_manager" "hashi-group" {
     port = 8300
   }
   named_port {
-    name = "nomad-server"
+    name = "nomad-https"
     port = 4646
   }
   named_port {
@@ -284,15 +275,10 @@ resource "google_compute_region_instance_group_manager" "hashi-group" {
     name = "nomad-wan"
     port = 4648
   }
-
-  # auto_healing_policies {
-  #   health_check      = google_compute_region_health_check.default.self_link
-  #   initial_delay_sec = 10
-  # }
 }
 
 
-# We do a stateful address for the instances, so the execution script on each instance is not the sam
+# We do a stateful address for the instances, so the execution script on each instance is not the same
 resource "google_compute_region_per_instance_config" "with_script" {
   count = var.server_nodes
 
@@ -318,7 +304,8 @@ resource "google_compute_region_per_instance_config" "with_script" {
         consul_encrypt_key = random_bytes.consul_encrypt_key.base64,
         node_name          = "${var.cluster_name}-server-${count.index}",
         nomad_token        = random_uuid.nomad_bootstrap.result,
-        nomad_bootstrapper = count.index == var.server_nodes - 1 ? true : false
+        nomad_bootstrapper = count.index == var.server_nodes - 1 ? true : false,
+        oidc_issuer        = local.nomad_https_url
       })
       instance_template = google_compute_instance_template.instance_template.self_link
     }
@@ -424,164 +411,3 @@ resource "google_compute_region_instance_group_manager" "nomad_gpu_clients" {
 
   target_size = var.nomad_gpu_clients
 }
-
-
-# ---------------------------------------------------- #
-# ############## OLD CONFIGURATION ######################
-# This is the old configuration, we are not using it anymore
-# In this old configuration we weren't using the instance group manager, and we were creating the instances from the template.
-# Saving this for future reference, in case we need to use it again.
-# ---------------------------------------------------- #
-
-# resource "google_compute_instance_from_template" "vm_server" {
-#   count = var.numnodes
-#   name = "vm-server-${count.index}-${random_id.server.dec}"
-#   # zone = var.gcp_zone
-#   zone = element(var.gcp_zones, count.index)
-
-#   source_instance_template = google_compute_instance_template.instance_template.id
-
-#   // Override fields from instance template
-#   network_interface {
-#     subnetwork = google_compute_subnetwork.subnet.self_link
-#     access_config {
-#         nat_ip = google_compute_address.server_addr[count.index].address
-#     }
-#   }
-#   metadata_startup_script = templatefile("${path.module}/template/template.tpl",{
-#     dc_name = var.cluster_name,
-#     gcp_project = var.gcp_project,
-#     tag = var.cluster_name,
-#     consul_license = var.consul_license,
-#     nomad_license = var.nomad_license,
-#     zone = var.gcp_region,
-#     bootstrap_token = var.consul_bootstrap_token,
-#     node_name = "server-${count.index}",
-#     nomad_token = random_uuid.nomad_bootstrap.result,
-#     nomad_bootstrapper = count.index == var.numnodes - 1 ? true : false
-#   })
-
-#   labels = {
-#     node = "server-${count.index}"
-#   }
-#   # lifecycle {
-#   #   create_before_destroy = true
-#   # }
-# }
-
-
-
-# resource "google_compute_instance_from_template" "vm_clients" {
-#   depends_on = [ consul_admin_partition.demo_partitions ]
-#   count = var.numclients
-#   name = "vm-clients-${count.index}-${random_id.server.dec}"
-#   # zone = var.gcp_zone
-#   zone = element(var.gcp_zones, count.index)
-
-#   source_instance_template = google_compute_instance_template.instance_template_clients.id
-
-#   // Override fields from instance template
-#   network_interface {
-#     subnetwork = google_compute_subnetwork.subnet.self_link
-#     access_config {
-#         nat_ip = google_compute_address.client_addr[count.index].address
-#     }
-#   }
-
-#   metadata_startup_script = templatefile("${path.module}/template/template-client.tpl",{
-#     dc_name = var.cluster_name,
-#     gcp_project = var.gcp_project,
-#     tag = var.cluster_name,
-#     consul_license = var.consul_license,
-#     nomad_license = var.nomad_license,
-#     bootstrap_token = var.consul_bootstrap_token,
-#     zone = var.gcp_region,
-#     node_name = "client-${count.index}"
-#     partition = var.consul_partitions != [""] ? element(local.admin_partitions,count.index) : "default"
-#   })
-
-#   labels = {
-#     node = "client-${count.index}"
-#   }
-#   # lifecycle {
-#   #   create_before_destroy = true
-#   # }
-# }
-
-
-# # Create an instance group from the vms
-# resource "google_compute_instance_group" "hashi_group" {
-#   depends_on = [
-#     google_compute_instance_template.instance_template,
-#     google_compute_instance_template.instance_template_clients
-#   ]
-#   name      = "${var.cluster_name}-instance-group"
-#   zone      = var.gcp_zone
-#   instances = google_compute_instance_from_template.vm_server.*.self_link
-#   named_port {
-#     name = "consul"
-#     port = 8500
-#   }
-#   named_port {
-#     name = "consul-sec"
-#     port = 8501
-#   }
-#   named_port {
-#     name = "consul-grpc"
-#     port = 8502
-#   }
-#   named_port {
-#     name = "consul-lan"
-#     port = 8301
-#   }
-#   named_port {
-#     name = "consul-wan"
-#     port = 8302
-#   }
-#   named_port {
-#     name = "consul-server"
-#     port = 8300
-#   }
-#   named_port {
-#     name = "nomad-server"
-#     port = 4646
-#   }
-#   named_port {
-#     name = "nomad-rpc"
-#     port = 4647
-#   }
-#   named_port {
-#     name = "nomad-wan"
-#     port = 4648
-#   }
-
-#   # lifecycle {
-#   #   create_before_destroy = true
-#   # }
-# }
-
-
-
-# # Creating an instance group per zone, as the instances can be spread across zones.
-# # We are not using the instance group manager as we could not be using the same instance template for all the instances.
-# resource "google_compute_instance_group" "app_group" {
-#   depends_on = [
-#     # google_compute_instance_template.instance_template,
-#     google_compute_instance_template.instance_template_clients
-#   ]
-#   count = length(distinct(var.gcp_zones))
-#   name      = "${var.cluster_name}-instance-group-client"
-#   zone      = element(var.gcp_zones, count.index)
-#   # instances = google_compute_instance_from_template.vm_clients.*.self_link
-#   instances = [
-#     for instance in google_compute_instance_from_template.vm_clients :
-#     instance.self_link if instance.zone == element(var.gcp_zones, count.index)
-#   ]
-#   named_port {
-#     name = "frontend"
-#     port = 8080
-#   }
-#   # lifecycle {
-#   #   create_before_destroy = true
-#   # }
-# }

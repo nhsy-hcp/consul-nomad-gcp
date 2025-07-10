@@ -225,6 +225,7 @@ server {
     retry_join = ["provider=gce project_name=${gcp_project} tag_value=${tag}"]
   }
   license_path = "$NOMAD_DIR/license.hclic"
+  oidc_issuer  = "${oidc_issuer}"
 }
 EOF
 

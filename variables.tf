@@ -146,3 +146,7 @@ variable "compute_sa_roles" {
     "roles/storage.objectViewer",
   ]
 }
+
+variable "letsencrypt_email" {
+  description = "Email for Let's Encrypt"
+}

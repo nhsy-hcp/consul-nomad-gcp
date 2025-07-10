@@ -7,7 +7,7 @@ resource "null_resource" "wait_for_service" {
   ]
   provisioner "local-exec" {
     command = <<EOF
-until $(curl -k --output /dev/null --silent --head --fail https://${trimsuffix(local.fqdn, ".")}:8501); do
+until $(curl -k --output /dev/null --silent --head --fail ${local.consul_https_url}); do
   printf '...'
   sleep 5
 done
