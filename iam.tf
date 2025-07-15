@@ -1,5 +1,5 @@
 resource "google_service_account" "compute" {
-  account_id = "compute-${var.cluster_name}-${random_id.default.hex}-sa"
+  account_id = "compute-${var.cluster_name}-sa-${local.unique_id}"
 }
 
 resource "google_project_iam_member" "compute" {

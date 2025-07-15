@@ -159,7 +159,7 @@ resource "google_compute_instance_template" "nomad_gpu_clients" {
 resource "google_compute_instance_from_template" "vm_cts" {
   count = var.enable_cts ? 1 : 0
 
-  name = "${var.cluster_name}-cts-${random_id.default.dec}"
+  name = "${var.cluster_name}-cts-${local.unique_id}"
   # zone = var.gcp_zone
   zone = element(var.gcp_zones, count.index)
 
@@ -284,7 +284,7 @@ resource "google_compute_region_per_instance_config" "with_script" {
 
   region                        = google_compute_region_instance_group_manager.hashi-group.region
   region_instance_group_manager = google_compute_region_instance_group_manager.hashi-group.name
-  name                          = "${var.cluster_name}-server-${count.index}-${random_id.default.dec}"
+  name                          = "${var.cluster_name}-server-${count.index}-${local.unique_id}"
   preserved_state {
     # internal_ip {
     #   interface_name = "nic0"

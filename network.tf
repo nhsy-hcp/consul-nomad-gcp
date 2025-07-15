@@ -19,7 +19,7 @@ resource "google_compute_subnetwork" "subnet" {
 # Create firewall rules
 
 resource "google_compute_firewall" "default" {
-  name    = "${var.cluster_name}-fw-${random_id.default.dec}"
+  name    = "${var.cluster_name}-fw-${local.unique_id}"
   network = google_compute_network.network.name
 
   allow {
@@ -36,7 +36,7 @@ resource "google_compute_firewall" "default" {
 }
 # These are internal rules for communication between the nodes internally
 resource "google_compute_firewall" "internal" {
-  name    = "${var.cluster_name}-internal-fw-${random_id.default.dec}"
+  name    = "${var.cluster_name}-internal-fw-${local.unique_id}"
   network = google_compute_network.network.name
 
   allow {

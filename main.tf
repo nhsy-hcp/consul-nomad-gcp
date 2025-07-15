@@ -1,5 +1,6 @@
 locals {
-  unique_id = random_id.default.hex
+  # unique_id = random_id.default.hex
+  unique_id = random_pet.unique_id.id
 
   # We concatenate the default partition with the list of partitions to create the instances including the default partition
   admin_partitions = distinct(concat(["default"], var.consul_partitions))
@@ -15,8 +16,9 @@ locals {
   consul_https_url = "https://${local.consul_fqdn}:8501"
 }
 
-resource "random_id" "default" {
-  byte_length = 1
+resource "random_pet" "unique_id" {
+  length    = 1
+  separator = ""
 }
 
 data "google_compute_image" "my_image" {
@@ -47,4 +49,3 @@ data "hcp_packer_artifact" "consul-nomad" {
 resource "random_bytes" "consul_encrypt_key" {
   length = 32
 }
-
