@@ -75,7 +75,8 @@ resource "google_iam_workload_identity_pool_provider" "tfc_provider" {
     # jwks_json = data.http.tfc.request_body
 
   }
-  attribute_condition = "assertion.sub.startsWith(\"organization:${var.tfc_organization}:project:${var.tfc_project}:workspace:${var.tfc_workspace}\")"
+  # attribute_condition = "assertion.sub.startsWith(\"organization:${var.tfc_organization}:project:${var.tfc_project}:workspace:${var.tfc_workspace}\")"
+  attribute_condition = "assertion.terraform_organization_name==\"${var.tfc_organization}\""
 }
 
 # Creates a service account that will be used for authenticating to GCP.
@@ -92,7 +93,7 @@ resource "google_service_account" "tfc_service_account" {
 resource "google_service_account_iam_member" "tfc_service_account_member" {
   service_account_id = google_service_account.tfc_service_account.name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.tfc_pool.name}/*"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.tfc_pool.name}/attribute.terraform_workspace_id/${tfe_workspace.default.id}"
 }
 
 # Updates the IAM policy to grant the service account permissions
