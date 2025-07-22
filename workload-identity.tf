@@ -66,15 +66,6 @@ resource "google_service_account" "monte_carlo" {
   display_name = "Nomad Monte Carlo Service Account"
 }
 
-resource "google_project_iam_member" "monte_carlo" {
-  for_each = toset([
-    "roles/storage.objectAdmin",
-  ])
-  project = var.gcp_project
-  role    = each.value
-  member  = "serviceAccount:${google_service_account.monte_carlo.email}"
-}
-
 # IAM Binding links the Workload Identity Pool -> Service Account.
 resource "google_service_account_iam_binding" "nomad" {
   service_account_id = google_service_account.nomad.name
