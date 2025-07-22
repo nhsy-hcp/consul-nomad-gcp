@@ -1,0 +1,26 @@
+# Core scientific computing
+numpy==1.24.3
+pandas==2.0.3
+scipy==1.11.1
+
+# Data fetching
+alpha-vantage==2.3.1
+requests==2.31.0
+
+# Visualization
+matplotlib==3.7.2
+seaborn==0.12.2
+
+# Configuration and utilities
+PyYAML==6.0.1
+python-dateutil==2.8.2
+
+# Cloud storage
+google-cloud-storage==2.10.0
+
+# Testing
+pytest==7.4.0
+pytest-cov==4.1.0
+
+# Optional: For better performance
+numba==0.57.1
