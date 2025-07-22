@@ -132,20 +132,21 @@ class TestGCSUploader:
         original_upload_file = uploader.upload_file
         uploader.upload_file = Mock(side_effect=lambda local_file_path, bucket_name, object_name, metadata=None: f"gs://{bucket_name}/{object_name}")
         
-        result = uploader.upload_results_directory(
+        uploaded_files, success = uploader.upload_results_directory(
             local_dir=temp_dir,
             bucket_url="gs://test-bucket/results",
             prefix="monte-carlo"
         )
         
         # Should have uploaded all files plus manifest
-        assert len(result) == len(sample_files) + 1  # +1 for manifest
-        assert 'upload_manifest.json' in result
+        assert len(uploaded_files) == len(sample_files) + 1  # +1 for manifest
+        assert 'upload_manifest.json' in uploaded_files
+        assert success is True
         
         # Check that files were "uploaded"
         for filename in sample_files.keys():
-            assert filename in result
-            assert result[filename].startswith("gs://test-bucket/")
+            assert filename in uploaded_files
+            assert uploaded_files[filename].startswith("gs://test-bucket/")
     
     @patch('gcs_uploader.storage')
     def test_list_bucket_contents(self, mock_storage):

@@ -125,10 +125,12 @@ class GCSUploader:
             return gcs_url
             
         except GoogleCloudError as e:
-            raise Exception(f"Failed to upload {local_file_path} to GCS: {e}")
+            # Extract meaningful error message
+            error_msg = self._extract_error_message(str(e))
+            raise Exception(f"Failed to upload {local_file_path} to GCS: {error_msg}")
     
     def upload_results_directory(self, local_dir: str, bucket_url: str, 
-                               prefix: str = "monte-carlo-results") -> Dict[str, str]:
+                               prefix: str = "monte-carlo-results") -> tuple[Dict[str, str], bool]:
         """
         Upload entire results directory to GCS
         
@@ -157,6 +159,7 @@ class GCSUploader:
         full_prefix = f"{full_prefix}/{timestamp}"
         
         uploaded_files = {}
+        failed_uploads = []
         local_path = Path(local_dir)
         
         # Create metadata for the upload
@@ -187,7 +190,9 @@ class GCSUploader:
                     uploaded_files[str(relative_path)] = gcs_url
                     
                 except Exception as e:
-                    print(f"  Warning: Failed to upload {file_path}: {e}")
+                    clean_error = self._extract_error_message(str(e))
+                    print(f"  Error: Failed to upload {relative_path}: {clean_error}")
+                    failed_uploads.append(str(relative_path))
                     continue
         
         # Create and upload a manifest file
@@ -216,9 +221,17 @@ class GCSUploader:
             )
             uploaded_files['upload_manifest.json'] = manifest_gcs_url
         except Exception as e:
-            print(f"  Warning: Failed to upload manifest: {e}")
+            clean_error = self._extract_error_message(str(e))
+            print(f"  Error: Failed to upload manifest: {clean_error}")
+            failed_uploads.append('upload_manifest.json')
         
-        return uploaded_files
+        # Return both uploaded files and success status
+        success = len(failed_uploads) == 0
+        if not success:
+            print(f"\n  Upload Summary: {len(uploaded_files)} succeeded, {len(failed_uploads)} failed")
+            print(f"  Failed files: {', '.join(failed_uploads)}")
+        
+        return uploaded_files, success
     
     def list_bucket_contents(self, bucket_name: str, prefix: str = "") -> List[str]:
         """List objects in GCS bucket with optional prefix"""
@@ -263,6 +276,39 @@ class GCSUploader:
             }
         except GoogleCloudError as e:
             raise Exception(f"Failed to get bucket info: {e}")
+    
+    @staticmethod
+    def _extract_error_message(error_str: str) -> str:
+        """Extract clean error message from Google Cloud error"""
+        import re
+        import json
+        
+        # Try to extract JSON error from the string
+        json_match = re.search(r'\{[^{}]*"error"[^{}]*\{[^{}]*"message"[^{}]*\}[^{}]*\}', error_str)
+        if json_match:
+            try:
+                error_json = json.loads(json_match.group())
+                if 'error' in error_json and 'message' in error_json['error']:
+                    return error_json['error']['message']
+            except (json.JSONDecodeError, KeyError):
+                pass
+        
+        # Try to extract HTTP status code and basic message
+        status_match = re.search(r'(\d{3})\s+[A-Z]+.*?:\s*(.+?)(?:\s*:\s*\(|$)', error_str)
+        if status_match:
+            status_code = status_match.group(1)
+            # Look for a clean message after the URL
+            message_part = error_str.split('}: ')[-1] if '}: ' in error_str else error_str
+            # Remove the tuple part at the end
+            if message_part.startswith('('):
+                return f"HTTP {status_code} - Authentication/Permission Error"
+            return f"HTTP {status_code}"
+        
+        # Fallback to first line of error
+        first_line = error_str.split('\n')[0].strip()
+        if len(first_line) > 100:
+            return first_line[:97] + '...'
+        return first_line
     
     @staticmethod
     def is_gcs_available() -> bool:

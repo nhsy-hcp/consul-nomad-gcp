@@ -157,28 +157,41 @@ def main():
                 )
         
         # Upload results to Google Cloud Storage if bucket is specified
+        gcs_upload_success = True
         if args.gcs_bucket and results:
             print(f"\nUploading results to GCS bucket: {args.gcs_bucket}")
             try:
                 gcs_uploader = GCSUploader()
-                uploaded_files = gcs_uploader.upload_results_directory(
+                uploaded_files, gcs_upload_success = gcs_uploader.upload_results_directory(
                     local_dir=args.output_dir,
                     bucket_url=args.gcs_bucket,
                     prefix=args.gcs_prefix
                 )
                 
-                print(f"Successfully uploaded {len(uploaded_files)} files to GCS:")
-                for local_file, gcs_url in uploaded_files.items():
-                    print(f"  {local_file} -> {gcs_url}")
+                if gcs_upload_success:
+                    print(f"Successfully uploaded {len(uploaded_files)} files to GCS:")
+                    for local_file, gcs_url in uploaded_files.items():
+                        print(f"  {local_file} -> {gcs_url}")
+                else:
+                    print(f"\nUpload completed with errors. {len(uploaded_files)} files uploaded successfully.")
                     
             except Exception as gcs_error:
-                print(f"Warning: Failed to upload results to GCS: {gcs_error}")
+                print(f"\nError: Failed to upload results to GCS: {gcs_error}")
                 print("Results are still available locally.")
+                gcs_upload_success = False
 
         print(f"\nSimulation completed successfully!")
         if args.gcs_bucket:
-            print(f"Results uploaded to: {args.gcs_bucket}")
+            if gcs_upload_success:
+                print(f"Results uploaded to: {args.gcs_bucket}")
+            else:
+                print(f"Warning: GCS upload had errors. Check logs above.")
         print(f"Local results available in: {args.output_dir}")
+        
+        # Exit with error code if GCS upload failed
+        if args.gcs_bucket and not gcs_upload_success:
+            print("\nExiting with error code due to GCS upload failures.")
+            sys.exit(1)
         
     except Exception as e:
         print(f"Error during simulation: {e}")
