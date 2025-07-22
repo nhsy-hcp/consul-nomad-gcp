@@ -2,7 +2,7 @@
 
 
 cd /opt/google/cuda-installer/
-sudo python3 cuda_installer.pyz install_cuda
+sudo python3 cuda_installer.pyz install_cuda --installation-mode=binary
 
 ## install nvidia drivers and toolkit
 #wget https://developer.download.nvidia.com/compute/cuda/repos/debian12/x86_64/cuda-keyring_1.1-1_all.deb
