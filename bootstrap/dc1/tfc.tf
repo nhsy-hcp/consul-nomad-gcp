@@ -38,12 +38,24 @@ resource "tfe_workspace" "default" {
   working_directory = var.tfc_working_directory
 }
 
+resource "tfe_variable_set" "default" {
+  name         = "${var.tfc_workspace}-varset"
+  description  = "GCP Workload Identity Variables"
+  organization = var.tfc_organization
+}
+
+resource "tfe_workspace_variable_set" "default" {
+  variable_set_id = tfe_variable_set.default.id
+  workspace_id    = tfe_workspace.default.id
+}
+
 # The following variables must be set to allow runs
 # to authenticate to GCP.
 #
 # https://registry.terraform.io/providers/hashicorp/tfe/latest/docs/resources/variable
 resource "tfe_variable" "enable_gcp_provider_auth" {
-  workspace_id = tfe_workspace.default.id
+  # workspace_id = tfe_workspace.default.id
+  variable_set_id = tfe_variable_set.default.id
 
   key      = "TFC_GCP_PROVIDER_AUTH"
   value    = "true"
@@ -59,7 +71,8 @@ resource "tfe_variable" "enable_gcp_provider_auth" {
 # and TFC_GCP_WORKLOAD_PROVIDER_ID variables below if desired.
 #
 resource "tfe_variable" "tfc_gcp_workload_provider_name" {
-  workspace_id = tfe_workspace.default.id
+  # workspace_id = tfe_workspace.default.id
+  variable_set_id = tfe_variable_set.default.id
 
   key      = "TFC_GCP_WORKLOAD_PROVIDER_NAME"
   value    = google_iam_workload_identity_pool_provider.tfc_provider.name
@@ -69,7 +82,8 @@ resource "tfe_variable" "tfc_gcp_workload_provider_name" {
 }
 
 resource "tfe_variable" "tfc_gcp_service_account_email" {
-  workspace_id = tfe_workspace.default.id
+  # workspace_id = tfe_workspace.default.id
+  variable_set_id = tfe_variable_set.default.id
 
   key      = "TFC_GCP_RUN_SERVICE_ACCOUNT_EMAIL"
   value    = google_service_account.tfc_service_account.email
@@ -79,8 +93,9 @@ resource "tfe_variable" "tfc_gcp_service_account_email" {
 }
 
 resource "tfe_variable" "workspace" {
-  for_each     = var.tfc_variables
-  workspace_id = tfe_workspace.default.id
+  for_each = var.tfc_variables
+  # workspace_id = tfe_workspace.default.id
+  variable_set_id = tfe_variable_set.default.id
 
   key       = each.key
   category  = each.value.category
