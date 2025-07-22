@@ -238,8 +238,11 @@ consul {
   }
 }
 plugin "docker" {
+  config {
+    allow_privileged = true
+  }
   gc {
-    image = false
+    image = true
     image_delay = "1h"
   }
   image_pull_timeout = "15m"

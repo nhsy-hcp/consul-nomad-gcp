@@ -50,7 +50,6 @@ resource "google_service_account" "nomad" {
   display_name = "Nomad Workload Identity Service Account"
 }
 
-
 resource "google_project_iam_member" "nomad" {
   for_each = toset([
     "roles/viewer",
@@ -58,12 +57,6 @@ resource "google_project_iam_member" "nomad" {
   project = var.gcp_project
   role    = each.value
   member  = "serviceAccount:${google_service_account.nomad.email}"
-}
-
-# Service Account which Nomad Workload Identities will map to.
-resource "google_service_account" "monte_carlo" {
-  account_id   = "nomad-monte-carlo-sa-${local.unique_id}"
-  display_name = "Nomad Monte Carlo Service Account"
 }
 
 # IAM Binding links the Workload Identity Pool -> Service Account.
@@ -80,8 +73,23 @@ resource "google_service_account_iam_binding" "nomad" {
   ]
 }
 
-resource "google_service_account_iam_binding" "monte_carlo" {
-  service_account_id = google_service_account.monte_carlo.name
+
+# Service Account which Nomad Workload Identities will map to.
+resource "google_service_account" "gce_pd_csi" {
+  account_id   = "nomad-gce-pd-csi-sa-${local.unique_id}"
+  display_name = "Nomad CSI gce-pd-csi Service Account"
+}
+
+resource "google_project_iam_member" "gce_pd_csi" {
+  for_each = toset(["roles/compute.instanceAdmin.v1"])
+
+  project = var.gcp_project
+  role    = each.value
+  member  = "serviceAccount:${google_service_account.gce_pd_csi.email}"
+}
+
+resource "google_service_account_iam_binding" "gce_pd_csi" {
+  service_account_id = google_service_account.gce_pd_csi.name
 
   role = "roles/iam.workloadIdentityUser"
 
@@ -89,7 +97,18 @@ resource "google_service_account_iam_binding" "monte_carlo" {
     # google_workload_identity_pool lacks an attribute for the principal, so
     # string format it manually to look like:
     #principal://iam.googleapis.com/projects/PROJECT_NUM/locations/global/workloadIdentityPools/POOL_NAME/subject/SUBJECT_MAPPING
-    "principal://iam.googleapis.com/${google_iam_workload_identity_pool.nomad.name}/subject/global:default:monte-carlo-batch:simulation:monte-carlo:tutorial"
+    "principal://iam.googleapis.com/${google_iam_workload_identity_pool.nomad.name}/subject/global:default:gce-pd-csi-controller:controller:plugin:csi",
+    "principal://iam.googleapis.com/${google_iam_workload_identity_pool.nomad.name}/subject/global:default:gce-pd-csi-node:node:plugin:csi"
+  ]
+}
+
+resource "google_service_account_iam_binding" "gce_pd_csi_attach" {
+  service_account_id = google_service_account.compute.name
+
+  role = "roles/iam.serviceAccountUser"
+
+  members = [
+    "serviceAccount:${google_service_account.gce_pd_csi.email}"
   ]
 }
 
@@ -115,8 +134,27 @@ resource "google_storage_bucket" "monte_carlo" {
   }
 }
 
+# Service Account which Nomad Workload Identities will map to.
+resource "google_service_account" "monte_carlo" {
+  account_id   = "nomad-monte-carlo-sa-${local.unique_id}"
+  display_name = "Nomad Monte Carlo Service Account"
+}
+
 resource "google_storage_bucket_iam_member" "monte_carlo" {
   bucket = google_storage_bucket.monte_carlo.name
   role   = "roles/storage.objectAdmin"
   member = "serviceAccount:${google_service_account.monte_carlo.email}"
+}
+
+resource "google_service_account_iam_binding" "monte_carlo" {
+  service_account_id = google_service_account.monte_carlo.name
+
+  role = "roles/iam.workloadIdentityUser"
+
+  members = [
+    # google_workload_identity_pool lacks an attribute for the principal, so
+    # string format it manually to look like:
+    #principal://iam.googleapis.com/projects/PROJECT_NUM/locations/global/workloadIdentityPools/POOL_NAME/subject/SUBJECT_MAPPING
+    "principal://iam.googleapis.com/${google_iam_workload_identity_pool.nomad.name}/subject/global:default:monte-carlo-batch:simulation:monte-carlo:tutorial"
+  ]
 }

@@ -75,3 +75,12 @@ output "gcp_wi_service_account" {
 output "monte_carlo_bucket" {
   value = google_storage_bucket.monte_carlo.name
 }
+
+output "gcp_wi_monte_carlo_service_account" {
+  value = google_service_account.monte_carlo.email
+}
+
+
+output "gcp_wi_csi_google_pd_service_account" {
+  value = google_service_account.gce_pd_csi.email
+}

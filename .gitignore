@@ -18,6 +18,11 @@
 *.plan
 
 # local vars
+**/.env
 terraform.tfvars
 
 *.hclic
+
+**/.claude
+.zed
+
