@@ -71,3 +71,7 @@ output "gcp_wi_provider" {
 output "gcp_wi_service_account" {
   value = google_service_account.nomad.email
 }
+
+output "monte_carlo_bucket" {
+  value = google_storage_bucket.monte_carlo.name
+}
