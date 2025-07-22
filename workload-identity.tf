@@ -60,6 +60,21 @@ resource "google_project_iam_member" "nomad" {
   member  = "serviceAccount:${google_service_account.nomad.email}"
 }
 
+# Service Account which Nomad Workload Identities will map to.
+resource "google_service_account" "monte_carlo" {
+  account_id   = "nomad-monte-carlo-sa-${local.unique_id}"
+  display_name = "Nomad Monte Carlo Service Account"
+}
+
+resource "google_project_iam_member" "monte_carlo" {
+  for_each = toset([
+    "roles/storage.objectAdmin",
+  ])
+  project = var.gcp_project
+  role    = each.value
+  member  = "serviceAccount:${google_service_account.monte_carlo.email}"
+}
+
 # IAM Binding links the Workload Identity Pool -> Service Account.
 resource "google_service_account_iam_binding" "nomad" {
   service_account_id = google_service_account.nomad.name
@@ -72,4 +87,45 @@ resource "google_service_account_iam_binding" "nomad" {
     #principal://iam.googleapis.com/projects/PROJECT_NUM/locations/global/workloadIdentityPools/POOL_NAME/subject/SUBJECT_MAPPING
     "principal://iam.googleapis.com/${google_iam_workload_identity_pool.nomad.name}/subject/global:default:gcp-wi-demo:batch:gcloud:tutorial"
   ]
+}
+
+resource "google_service_account_iam_binding" "monte_carlo" {
+  service_account_id = google_service_account.monte_carlo.name
+
+  role = "roles/iam.workloadIdentityUser"
+
+  members = [
+    # google_workload_identity_pool lacks an attribute for the principal, so
+    # string format it manually to look like:
+    #principal://iam.googleapis.com/projects/PROJECT_NUM/locations/global/workloadIdentityPools/POOL_NAME/subject/SUBJECT_MAPPING
+    "principal://iam.googleapis.com/${google_iam_workload_identity_pool.nomad.name}/subject/global:default:monte-carlo-batch:simulation:monte-carlo:tutorial"
+  ]
+}
+
+resource "google_storage_bucket" "monte_carlo" {
+  name     = "${data.google_client_config.current.project}-monte-carlo-${local.unique_id}"
+  location = var.gcp_region
+
+  uniform_bucket_level_access = true
+
+  # Enable Object Versioning to keep track of changes
+  versioning {
+    enabled = true
+  }
+
+  # Enable Object Lifecycle Management to delete old versions after a period
+  lifecycle_rule {
+    action {
+      type = "Delete"
+    }
+    condition {
+      age = 1
+    }
+  }
+}
+
+resource "google_storage_bucket_iam_member" "monte_carlo" {
+  bucket = google_storage_bucket.monte_carlo.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.monte_carlo.email}"
 }

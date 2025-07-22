@@ -21,6 +21,8 @@ resource "random_pet" "unique_id" {
   separator = ""
 }
 
+data "google_client_config" "current" {}
+
 data "google_compute_image" "my_image" {
   family  = var.image_family
   project = var.gcp_project
