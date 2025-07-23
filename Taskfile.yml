@@ -97,9 +97,15 @@ tasks:
         nomad job run -var-file=jobs/traefik.hcl jobs/traefik.nomad
         nomad job run jobs/echoserver.nomad
         nomad job run jobs/helloworld.nomad
-        echo https://{{ .FQDN }}:8443/dashboard/
-        echo https://echoserver.{{ .FQDN }}
-        echo https://helloworld.{{ .FQDN }}
+      - task: ui-jobs
+
+  ui-jobs:
+    desc: UI Nomad jobs
+    silent: true
+    cmds:
+      - echo https://{{ .FQDN }}:8443/dashboard/
+      - echo https://echoserver.{{ .FQDN }}
+      - echo https://helloworld.{{ .FQDN }}
     vars:
       FQDN:
         sh: terraform output ingress_fqdn

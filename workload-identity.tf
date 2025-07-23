@@ -44,24 +44,24 @@ resource "google_iam_workload_identity_pool_provider" "nomad_provider" {
   }
 }
 
-# Service Account which Nomad Workload Identities will map to.
-resource "google_service_account" "nomad" {
-  account_id   = "nomad-wi-sa-${local.unique_id}"
-  display_name = "Nomad Workload Identity Service Account"
+# Service Account which Nomad Workload Identity demo will map to.
+resource "google_service_account" "wi_demo" {
+  account_id   = "nomad-wi-demo-sa-${local.unique_id}"
+  display_name = "Nomad WI demo Service Account"
 }
 
-resource "google_project_iam_member" "nomad" {
+resource "google_project_iam_member" "wi_demo" {
   for_each = toset([
     "roles/viewer",
   ])
   project = var.gcp_project
   role    = each.value
-  member  = "serviceAccount:${google_service_account.nomad.email}"
+  member  = "serviceAccount:${google_service_account.wi_demo.email}"
 }
 
 # IAM Binding links the Workload Identity Pool -> Service Account.
-resource "google_service_account_iam_binding" "nomad" {
-  service_account_id = google_service_account.nomad.name
+resource "google_service_account_iam_binding" "wi_demo" {
+  service_account_id = google_service_account.wi_demo.name
 
   role = "roles/iam.workloadIdentityUser"
 
@@ -73,11 +73,10 @@ resource "google_service_account_iam_binding" "nomad" {
   ]
 }
 
-
 # Service Account which Nomad Workload Identities will map to.
 resource "google_service_account" "gce_pd_csi" {
   account_id   = "nomad-gce-pd-csi-sa-${local.unique_id}"
-  display_name = "Nomad CSI gce-pd-csi Service Account"
+  display_name = "Nomad GCE PD CSI Service Account"
 }
 
 resource "google_project_iam_member" "gce_pd_csi" {
@@ -97,8 +96,7 @@ resource "google_service_account_iam_binding" "gce_pd_csi" {
     # google_workload_identity_pool lacks an attribute for the principal, so
     # string format it manually to look like:
     #principal://iam.googleapis.com/projects/PROJECT_NUM/locations/global/workloadIdentityPools/POOL_NAME/subject/SUBJECT_MAPPING
-    "principal://iam.googleapis.com/${google_iam_workload_identity_pool.nomad.name}/subject/global:default:gce-pd-csi-controller:controller:plugin:csi",
-    "principal://iam.googleapis.com/${google_iam_workload_identity_pool.nomad.name}/subject/global:default:gce-pd-csi-node:node:plugin:csi"
+    "principal://iam.googleapis.com/${google_iam_workload_identity_pool.nomad.name}/subject/global:default:gce-pd-csi-controller:controller:plugin:csi"
   ]
 }
 

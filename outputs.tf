@@ -41,9 +41,6 @@ export CONSUL_HTTP_SSL_VERIFY=false
 export NOMAD_ADDR="${local.nomad_https_url}"
 export NOMAD_TOKEN="${random_uuid.nomad_bootstrap.result}"
 export NOMAD_SKIP_VERIFY=true
-export GCP_PROJECT="${var.gcp_project}"
-export GCP_WI_PROVIDER="${google_iam_workload_identity_pool_provider.nomad_provider.name}"
-export GCP_WI_SERVICE_ACCOUNT="${google_service_account.nomad.email}"
 EOF
   sensitive = true
 }
@@ -68,8 +65,8 @@ output "gcp_wi_provider" {
   value = google_iam_workload_identity_pool_provider.nomad_provider.name
 }
 
-output "gcp_wi_service_account" {
-  value = google_service_account.nomad.email
+output "gcp_wi_demo_service_account" {
+  value = google_service_account.wi_demo.email
 }
 
 output "monte_carlo_bucket" {
@@ -79,7 +76,6 @@ output "monte_carlo_bucket" {
 output "gcp_wi_monte_carlo_service_account" {
   value = google_service_account.monte_carlo.email
 }
-
 
 output "gcp_wi_csi_google_pd_service_account" {
   value = google_service_account.gce_pd_csi.email

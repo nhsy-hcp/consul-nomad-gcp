@@ -317,8 +317,7 @@ monte-carlo/
 │   ├── monte_carlo.py           # Monte Carlo engine
 │   ├── data_fetcher.py          # Data processing utilities
 │   ├── visualizer.py            # Plotting and charts
-│   ├── gcs_uploader.py          # Google Cloud Storage
-│   └── results/                 # Example output files
+│   └── gcs_uploader.py          # Google Cloud Storage
 ├── config/
 │   └── simulation.yaml          # Default configuration
 ├── data/                        # Historical data cache
