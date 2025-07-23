@@ -1,0 +1,17 @@
+# Packer variables for building Consul/Nomad images on GCP
+
+# HashiCorp product versions
+consul_version = "1.21.2+ent"
+nomad_version = "1.10.2+ent"
+
+# Image configuration
+image = "consul-nomad-ent"
+image_family = "hashistack"
+source_image_family = "debian-12"
+
+# GCP configuration
+gcp_project = "__GCP_PROJECT_ID__"
+
+# SSH configuration
+sshuser = "packer"
+

@@ -61,6 +61,7 @@ variable "tfc_service_account_iam_roles" {
     "roles/iam.serviceAccountUser",
     "roles/iam.workloadIdentityPoolAdmin",
     "roles/resourcemanager.projectIamAdmin",
+    "roles/storage.admin",
     "roles/viewer",
   ]
 }

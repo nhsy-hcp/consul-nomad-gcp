@@ -11,6 +11,7 @@ tfc_variables = {
   hcp_project_id           = { value = "__REPLACE__" }
   server_nodes             = { value = 3 }
   nomad_clients            = { value = 2 }
+  nomad_gpu_clients        = { value = 0 }
   subnetwork_cidr          = { value = "10.64.0.0/16" }
   gcp_sa                   = { value = "__REPLACE__" }
   cluster_name             = { value = "dc1-hcp" }
@@ -19,6 +20,6 @@ tfc_variables = {
   nomad_license            = { value = "__REPLACE__", sensitive = true }
   dns_zone                 = { value = "doormat-accountid" }
   consul_bootstrap_token   = { value = "__REPLACE__", sensitive = true }
-  HCP_CLIENT_ID            = { value = "__REPLACE__", sensitive = true, category = "env" }
-  HCP_CLIENT_SECRET        = { value = "__REPLACE__", sensitive = true, category = "env" }
+  nomad_client_preemptible = { value = true }
+  letsencrypt_email        = { value = "__REPLACE__" }
 }

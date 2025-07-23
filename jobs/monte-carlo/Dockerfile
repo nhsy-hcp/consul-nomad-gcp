@@ -32,9 +32,8 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Create non-root user for security
 RUN groupadd -r montecarlo && useradd -r -g montecarlo montecarlo
 
-# Create application directories and yfinance cache directories
+# Create application directories and matplotlib cache directory
 RUN mkdir -p /app/src /app/config /app/data /app/results && \
-    mkdir -p /home/montecarlo/.cache/py-yfinance && \
     mkdir -p /home/montecarlo/.config/matplotlib && \
     chown -R montecarlo:montecarlo /app /home/montecarlo
 
@@ -63,9 +62,8 @@ ENV PYTHONPATH="/app/src:$PYTHONPATH"
 ENV GOOGLE_APPLICATION_CREDENTIALS=""
 ENV GOOGLE_CLOUD_PROJECT=""
 
-# Set cache directories for matplotlib and yfinance
+# Set cache directory for matplotlib
 ENV MPLCONFIGDIR="/home/montecarlo/.config/matplotlib"
-ENV YF_CACHE_DIR="/home/montecarlo/.cache/py-yfinance"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

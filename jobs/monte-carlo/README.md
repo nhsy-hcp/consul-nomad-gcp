@@ -2,12 +2,10 @@
 
 A comprehensive Monte Carlo simulation tool for financial risk analysis, built with Python and designed for deployment on HashiCorp Nomad with Google Cloud Storage integration.
 
-> **⚠️ Yahoo Finance Data Issue**: Due to recent Yahoo Finance API changes, live data fetching may not work reliably. **Use `python example_with_mock_data.py` to see the full system working with generated data.** The Monte Carlo simulation engine is production-ready - only the external data source has issues.
-
-## 🚀 Features
+## Features
 
 - **Monte Carlo Engine**: Geometric Brownian Motion modeling for stock price simulation
-- **Real-time Data**: Yahoo Finance integration with intelligent caching
+- **Historical Data**: Support for CSV data import and mock data generation
 - **Risk Analysis**: Value at Risk (VaR), statistical summaries, and distribution analysis
 - **Visualizations**: Comprehensive plots including price paths, distributions, and risk metrics
 - **Cloud Storage**: Seamless Google Cloud Storage integration for result persistence
@@ -15,7 +13,7 @@ A comprehensive Monte Carlo simulation tool for financial risk analysis, built w
 - **Nomad Integration**: Parameterized batch jobs for scalable execution
 - **Testing**: 44+ comprehensive tests with full coverage
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Quick Start](#-quick-start)
 - [Installation](#-installation)
@@ -27,9 +25,8 @@ A comprehensive Monte Carlo simulation tool for financial risk analysis, built w
 - [Project Structure](#-project-structure)
 - [Examples](#-examples)
 - [Troubleshooting](#-troubleshooting)
-- [Contributing](#-contributing)
 
-## 🏁 Quick Start
+## Quick Start
 
 ### Using Docker (Recommended)
 
@@ -56,11 +53,11 @@ python src/main.py --tickers AAPL --days 126 --simulations 5000
 # Results will be saved to ./results/ directory
 # Cache data will be stored in ./data/ directory
 
-# If Yahoo Finance has issues, try the mock data example:
+# Try the mock data example for testing:
 python example_with_mock_data.py
 ```
 
-## 📦 Installation
+## Installation
 
 ### Prerequisites
 
@@ -77,7 +74,7 @@ The project uses the following key dependencies:
 numpy>=1.24.3          # Numerical computations
 pandas>=2.0.3           # Data manipulation
 matplotlib>=3.7.2       # Visualization
-yfinance>=0.2.20        # Stock data fetching
+# Stock data supported via CSV import or mock data generation
 google-cloud-storage    # GCS integration
 pytest>=7.4.0          # Testing framework
 ```
@@ -88,7 +85,7 @@ Install all dependencies:
 pip install -r requirements.txt
 ```
 
-## 🎯 Usage
+## Usage
 
 ### Command Line Interface
 
@@ -130,7 +127,7 @@ python src/main.py --tickers TSLA --no-plots
 python src/main.py --tickers TSLA --output-dir ./custom-results
 ```
 
-## 🐳 Docker
+## Docker
 
 ### Building and Publishing
 
@@ -183,9 +180,8 @@ docker run --rm \
 | `GOOGLE_APPLICATION_CREDENTIALS` | Path to GCS service account key |
 | `GOOGLE_CLOUD_PROJECT` | GCP project ID |
 | `MPLCONFIGDIR` | Matplotlib config directory |
-| `YF_CACHE_DIR` | Yahoo Finance cache directory |
 
-## 🎪 Nomad Deployment
+## Nomad Deployment
 
 ### Submit the Job
 
@@ -228,7 +224,7 @@ nomad logs -f <allocation-id>
 nomad fs ls <allocation-id>/alloc/results/
 ```
 
-## ⚙️ Configuration
+## Configuration
 
 ### Configuration File (`config/simulation.yaml`)
 
@@ -283,7 +279,7 @@ gcloud auth application-default login
 
 Configure workload identity for seamless authentication in cloud environments.
 
-## 🧪 Testing
+## Testing
 
 ### Run All Tests
 
@@ -306,58 +302,45 @@ docker run --rm -v $(pwd):/workspace -w /workspace --entrypoint="" \
 - **GCS Tests**: Cloud storage integration
 - **Mock Tests**: External API interactions
 
-### Test Coverage
-
-- ✅ 44 tests passing
-- ✅ Monte Carlo engine (10 tests)
-- ✅ Data fetcher (18 tests)
-- ✅ GCS uploader (16 tests)
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 monte-carlo/
-├── README.md                 # This file
-├── plan.md                   # Project planning document
-├── requirements.txt          # Python dependencies
-├── Dockerfile               # Container definition
-├── monte-carlo.nomad        # Nomad job specification
-├── src/                     # Source code
-│   ├── main.py              # CLI entry point
-│   ├── monte_carlo.py       # Monte Carlo engine
-│   ├── data_fetcher.py      # Yahoo Finance integration
-│   ├── visualizer.py        # Plotting and charts
-│   └── gcs_uploader.py      # Google Cloud Storage
+├── README.md                    # This file
+├── requirements.txt             # Python dependencies
+├── Dockerfile                   # Container definition
+├── monte-carlo-batch.nomad      # Nomad job specification
+├── dispatch-batch-jobs.sh       # Job dispatch script
+├── notes.txt                    # Development notes
+├── src/                         # Source code
+│   ├── main.py                  # CLI entry point
+│   ├── monte_carlo.py           # Monte Carlo engine
+│   ├── data_fetcher.py          # Data processing utilities
+│   ├── visualizer.py            # Plotting and charts
+│   ├── gcs_uploader.py          # Google Cloud Storage
+│   └── results/                 # Example output files
 ├── config/
-│   └── simulation.yaml      # Default configuration
-└── tests/                   # Test suite
+│   └── simulation.yaml          # Default configuration
+├── data/                        # Historical data cache
+│   ├── *.csv                    # Stock price data files
+│   └── *.json                   # Metadata files
+├── results/                     # Simulation outputs
+│   ├── *.csv                    # Results data
+│   └── *.json                   # Upload manifests
+└── tests/                       # Test suite
+    ├── __init__.py
     ├── test_monte_carlo.py
     ├── test_data_fetcher.py
     └── test_gcs_uploader.py
 ```
 
-## 📊 Examples
-
-### 0. Test with Mock Data (Recommended First Step)
-
-If you're having Yahoo Finance issues or want to test the core functionality:
-
-```bash
-# Run simulation with generated mock data
-python example_with_mock_data.py
-```
-
-This will:
-- Generate realistic mock stock price data
-- Run a complete Monte Carlo simulation
-- Create visualizations and save results
-- Verify that all components are working correctly
+## Examples
 
 ### 1. Risk Analysis for Tech Stocks
 
 ```bash
 python src/main.py \
-  --tickers AAPL MSFT GOOGL NVDA AMD \
+  --tickers AAPL MSFT GOOG NVDA \
   --days 252 \
   --simulations 50000 \
   --confidence-levels 0.90 0.95 0.99
@@ -379,14 +362,13 @@ python src/main.py \
   --tickers SPY QQQ IWM \
   --days 252 \
   --simulations 100000 \
-  --gcs-bucket gs://financial-analysis/portfolio-simulation \
-  --gcs-prefix "etf-analysis-$(date +%Y%m%d)"
+  --gcs-bucket gs://financial-analysis \
+  --gcs-prefix "analysis-$(date +%Y%m%d)"
 ```
 
 ### 4. Automated Daily Analysis (Nomad)
 
 ```bash
-# Submit periodic job (uncomment periodic section in nomad file)
 nomad job run monte-carlo.nomad
 
 # Or dispatch daily
@@ -397,68 +379,11 @@ nomad job dispatch \
   monte-carlo-simulation
 ```
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
-#### 1. Yahoo Finance Data Fetching Issues
-
-```
-ERROR Failed to get ticker 'AAPL' reason: Expecting value: line 1 column 1 (char 0)
-ERROR AAPL: No price data found, symbol may be delisted
-```
-
-**Common Causes**:
-- Yahoo Finance API changes or outages (most common)
-- Network connectivity issues  
-- Rate limiting or IP blocking
-- `yfinance` library compatibility issues
-
-**Solutions**:
-
-1. **🎯 Use Mock Data Example (Recommended)**:
-   ```bash
-   # This always works and demonstrates full functionality
-   python example_with_mock_data.py
-   ```
-
-2. **🐳 Try Docker Container**: Sometimes Docker has better network connectivity
-   ```bash
-   docker run --rm -v $(pwd)/results:/app/results ghcr.io/nhsy-hcp/consul-nomad-gcp/monte-carlo:latest --tickers AAPL --no-plots
-   ```
-
-3. **⏰ Wait and Retry**: Yahoo Finance issues can be temporary
-   ```bash
-   # Try again later (sometimes hours/days later)
-   python src/main.py --tickers AAPL
-   ```
-
-4. **🔍 Check yfinance Status**: Test if yfinance is working at all
-   ```bash
-   python -c "import yfinance as yf; print(yf.Ticker('AAPL').history(period='5d'))"
-   ```
-
-5. **📊 Use CSV Data (Real Historical Data)**:
-   ```bash
-   # Download CSV from Yahoo Finance website manually, then:
-   python example_with_csv_data.py AAPL.csv AAPL
-   ```
-   
-   **To get CSV data**:
-   1. Go to https://finance.yahoo.com
-   2. Search for stock (e.g., AAPL)  
-   3. Click "Historical Data" → Set period → "Download"
-   4. Save CSV file and run: `python example_with_csv_data.py filename.csv`
-
-**Important Notes**:
-- ⚠️ **This is a known `yfinance` library issue**, not a problem with our Monte Carlo simulation
-- ✅ **Our simulation engine works perfectly** (verified by 44 passing tests)
-- 🎯 **Use the mock data example** to see the full system working
-- 🔧 **The core Monte Carlo algorithms are production-ready**
-
-**Current Status**: Yahoo Finance data fetching is unreliable. The mock data example demonstrates that all simulation logic works correctly.
-
-#### 2. GCS Permission Errors
+#### 1. GCS Permission Errors
 
 ```
 Error: Failed to upload results to GCS: 403 Forbidden
@@ -469,7 +394,7 @@ Error: Failed to upload results to GCS: 403 Forbidden
 - Ensure service account has `Storage Object Creator` role
 - Check bucket permissions and existence
 
-#### 3. Docker Permission Issues
+#### 2. Docker Permission Issues
 
 ```
 PermissionError: [Errno 13] Permission denied: '/home/montecarlo'
@@ -477,7 +402,7 @@ PermissionError: [Errno 13] Permission denied: '/home/montecarlo'
 
 **Solution**: The Docker image creates proper directories and permissions automatically. Rebuild the image if issues persist.
 
-#### 4. Insufficient Data
+#### 3. Insufficient Data
 
 ```
 ValueError: Insufficient historical data (need at least 30 days)
@@ -500,61 +425,3 @@ Enable verbose logging by modifying the configuration:
 logging:
   level: "DEBUG"
 ```
-
-## 🤝 Contributing
-
-### Development Setup
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd monte-carlo
-
-# Install development dependencies
-pip install -r requirements.txt
-
-# Run tests
-python -m pytest tests/ -v
-
-# Build Docker image
-docker build -t monte-carlo:latest .
-```
-
-### Code Quality
-
-- Follow PEP 8 style guidelines
-- Add type hints for new functions
-- Write tests for new features
-- Update documentation for API changes
-
-### Submitting Changes
-
-1. Fork the repository
-2. Create a feature branch
-3. Write tests for new functionality
-4. Ensure all tests pass
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- **Yahoo Finance**: For providing free financial data
-- **HashiCorp Nomad**: For container orchestration
-- **Google Cloud**: For storage and compute services
-- **NumPy/Pandas**: For numerical computing foundations
-
-## 📞 Support
-
-For questions, issues, or feature requests:
-
-1. Check the [Troubleshooting](#-troubleshooting) section
-2. Review existing GitHub issues
-3. Create a new issue with detailed information
-4. Include log output and configuration details
-
----
-
-**Happy Simulating! 📈**

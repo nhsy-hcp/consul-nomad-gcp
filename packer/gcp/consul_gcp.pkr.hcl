@@ -17,9 +17,6 @@ variable "consul_version" {
 variable "nomad_version" {
   default = "1.5.1"
 }
-variable "vault_version" {
-  default = "1.14.1"
-}
 variable "image_family" {
   default = "hashistack"
 }
@@ -68,7 +65,6 @@ build {
     environment_vars = [
       "CONSUL_VERSION=${var.consul_version}",
       "NOMAD_VERSION=${var.nomad_version}",
-      "VAULT_VERSION=${var.vault_version}"
     ]
   }
 }

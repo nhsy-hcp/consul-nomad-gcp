@@ -1,6 +1,5 @@
 consul_version = "1.21.2+ent"
 nomad_version = "1.10.2+ent"
-vault_version = "1.19.6+ent"
 image = "consul-nomad-ent"
 sshuser = "packer"
 gcp_project = "hc-2ea1d32d24964f82bedbf185c19"
