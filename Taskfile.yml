@@ -180,8 +180,16 @@ tasks:
     cmds:
       - |
         eval $(terraform output -raw eval_vars)
-        nomad job run jobs/traefik.nomad
+        nomad volume create jobs/traefik-csi-volume.hcl
+        nomad job run -var-file=jobs/traefik.hcl jobs/traefik.nomad
         nomad job run jobs/echoserver.nomad
+        nomad job run jobs/helloworld.nomad
+        echo https://{{ .FQDN }}:8443/dashboard/
+        echo https://echoserver.{{ .FQDN }}
+        echo https://helloworld.{{ .FQDN }}
+    vars:
+      FQDN:
+        sh: terraform output ingress_fqdn
 
   purge-jobs:
     desc: Purge Nomad jobs

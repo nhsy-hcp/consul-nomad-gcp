@@ -1,13 +1,23 @@
 variable "gcs_bucket" {
   type        = string
   description = "Google Cloud Storage bucket for storing results"
-  default     = "hc-2ea1d32d24964f82bedbf185c19-monte-carlo-impala"
+}
+
+variable "gcp_project" {
+  description = "Google Cloud Project ID"
+}
+
+variable "gcp_wi_provider" {
+  description = "Google Cloud IAM Workload Identity Pool Provider Name"
+}
+
+variable "gcp_service_account" {
+  description = "Google Cloud Service Account Email"
 }
 
 variable "docker_image" {
   type        = string
   description = "Docker image for the Monte Carlo simulation"
-  default     = "ghcr.io/nhsy-hcp/consul-nomad-gcp/monte-carlo:latest"
 }
 
 job "monte-carlo-batch" {
@@ -21,18 +31,28 @@ job "monte-carlo-batch" {
     # Single ticker per job for better isolation and resource management
     payload       = "optional"
     meta_required = ["TICKER"]
-    meta_optional = ["DAYS", "SIMULATIONS", "GCS_BUCKET", "GCS_PREFIX", "ALPHA_VANTAGE_API_KEY"]
+    meta_optional = ["DAYS", "SIMULATIONS", "ALPHA_VANTAGE_API_KEY"]
   }
 
   group "simulation" {
     count = 1
+
+    # Reschedule policy - disable to ignore placement errors
+    reschedule {
+      attempts       = 15
+      interval       = "1h"
+      delay          = "30s"
+      delay_function = "exponential"
+      max_delay      = "120s"
+      unlimited      = false
+    }
 
     task "monte-carlo" {
       driver = "docker"
 
       config {
         image = var.docker_image
-        force_pull = true
+        force_pull = false
         
         args = [
           "--tickers", "${NOMAD_META_TICKER}",
@@ -40,8 +60,9 @@ job "monte-carlo-batch" {
           "--simulations", "${NOMAD_META_SIMULATIONS}",
           "--output-dir", "/alloc/data",
           "--cache-dir", "/app/data",
-          "--no-plots",  # Disable plots for batch jobs to save resources
-          "--gcs-bucket", "${NOMAD_META_GCS_BUCKET}",
+          "--no-plots",
+          "--gcs-bucket", var.gcs_bucket,
+          "--gcs-prefix", "${NOMAD_ALLOC_ID}",
         ]
       }
 
@@ -55,12 +76,16 @@ job "monte-carlo-batch" {
         
         # Add ticker to results prefix for easier identification
         RESULT_PREFIX = "${NOMAD_META_TICKER}_${NOMAD_ALLOC_ID}"
+
+        # Google Cloud credentials
+        GOOGLE_APPLICATION_CREDENTIALS = "/local/cred.json"
+
       }
 
       # Resource requirements (optimized for single ticker)
       resources {
-        cpu    = 1000  # 1 CPU core
-        memory = 1024  # 1GB RAM (reduced since single ticker)
+        cpu    = 100   # 0.5 CPU core to fit available resources
+        memory = 512  # 1GB RAM (reduced since single ticker)
       }
 
       # Configuration template
@@ -116,25 +141,58 @@ EOF
       # Restart policy
       restart {
         attempts = 0
-        interval = "30m"
+        interval = "10m"
         delay    = "15s"
         mode     = "fail"
       }
 
-      # Kill timeout
-      kill_timeout = "30s"
+      # Nomad Workload Identity for authenticating with Google Federated
+      # Workload Identity Provider
+      identity {
+        # Name must match the file parameter in the credential config template
+        # below *and* the principal used in the Service Account IAM Binding.
+        name = "tutorial"
+        file = true
+
+        # Audience must match the audience specified in the Google IAM Workload
+        # Identity Pool Provider.
+        aud  = ["gcp"]
+        ttl  = "1h"
+      }
+
+      template {
+              destination = "local/cred.json"
+              data        = <<EOF
+{
+  "type": "external_account",
+  "audience": "//iam.googleapis.com/{{ env "NOMAD_META_wi_provider" }}",
+  "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
+  "token_url": "https://sts.googleapis.com/v1/token",
+  "service_account_impersonation_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/{{ env "NOMAD_META_service_account" }}:generateAccessToken",
+  "credential_source": {
+    "file": "/secrets/nomad_tutorial.jwt",
+    "format": {
+      "type": "text"
+    }
+  }
+}
+EOF
+      }
     }
   }
 
-  # Spread jobs across different nodes for better performance
-  spread {
-    attribute = "${node.unique.id}"
-    weight    = 100
-  }
+  # # Spread jobs across different nodes for better performance
+  # spread {
+  #   attribute = "${node.unique.id}"
+  #   weight    = 100
+  # }
 
   # Job metadata
   meta {
-    gcs_bucket = var.gcs_bucket
+    bucket          = var.gcs_bucket
+    project         = var.gcp_project
+    wi_provider     = var.gcp_wi_provider
+    service_account = var.gcp_service_account
     image   = var.docker_image
     purpose = "monte-carlo-simulation"
     type    = "single-ticker-batch"

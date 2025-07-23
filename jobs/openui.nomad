@@ -53,13 +53,13 @@ job "open-webui" {
           count = 1
         }
       }
-      
+
       volume_mount {
         volume      = "openwebui-ollama"
         destination = "/root/.ollama"
         read_only   = false
       }
-      
+
       service {
         name = "ollama"
         port = "api"
@@ -90,18 +90,18 @@ job "open-webui" {
         image = "ghcr.io/open-webui/open-webui:cuda"
         ports = ["http"]
       }
-      
+
       resources {
         cpu    = 1000     # 1 CPU core
         memory = 1024 * 4 # 1GB
       }
-      
+
       volume_mount {
         volume      = "openwebui-data"
         destination = "/app/backend/data"
         read_only   = false
       }
-      
+
       service {
         name = "open-webui"
         port = "http"
