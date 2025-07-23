@@ -66,6 +66,7 @@ Before you begin, ensure you have the following:
     Create the required variable files from examples:
     *   `cp bootstrap/dc1/terraform.tfvars.example bootstrap/dc1/terraform.tfvars`
     *   `cp packer/gcp/consul_gcp.auto.pkrvars.hcl.example packer/gcp/consul_gcp.auto.pkrvars.hcl`
+    *   `cp backend.tf.example backend.tf`
 
 ## HCP Terraform Workspace Setup
 
@@ -147,6 +148,28 @@ After successful bootstrap:
 2. Verify that all variables are properly configured
 3. Ensure the workspace is connected to your GitHub repository
 
+### Step 5: Configure Workspace backend
+
+Edit `backend.tf` with your workspace settings:
+
+```hcl
+terraform {
+  cloud {
+    organization = "__REPLACE__"
+    workspaces {
+      name    = "__REPLACE__"
+      project = "__REPLACE__"
+    }
+  }
+}
+```
+
+Initialize the root directory to set up the backend
+```bash
+terraform init
+terraform output
+```
+
 ## Quick Start (Recommended)
 
 **Prerequisites:**
@@ -166,7 +189,8 @@ After successful bootstrap:
     Once the HCP Terraform run is complete, configure your shell to communicate with the cluster.
 
     ```bash
-    eval $(task tf-output-dc1)
+    eval $(terraform output -raw eval_vars)
+    nomad status
     ```
     This sets the necessary `NOMAD_` and `CONSUL_` environment variables.
 
@@ -183,7 +207,6 @@ After successful bootstrap:
     ```bash
     task setup
     ```
-
 
 ## Configuration Reference
 
@@ -217,7 +240,7 @@ Use `task` to manage the project.
 | `task ui`            | Opens the Consul and Nomad UIs in your browser.                   |
 | `task run-jobs`      | Deploys all example Nomad workloads (Traefik, apps).              |
 | `task purge-jobs`    | Stops and purges all running Nomad jobs.                          |
-| `task tf-output-dc1` | Fetches and prints connection variables from the `dc1` workspace. |
+| `task setup`         | Sets up Nomad + Consul Workload Identity integration.              |
 
 ## Project Structure Notes
 
