@@ -1,0 +1,5 @@
+docker_image        = "__REPLACE__"
+gcs_bucket          = "__REPLACE__"
+gcp_project         = "__REPLACE__"
+gcp_wi_provider     = "__REPLACE__"
+gcp_service_account = "__REPLACE__"

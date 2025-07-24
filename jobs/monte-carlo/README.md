@@ -20,6 +20,7 @@ A comprehensive Monte Carlo simulation tool for financial risk analysis, built w
 - [Usage](#-usage)
 - [Docker](#-docker)
 - [Nomad Deployment](#-nomad-deployment)
+- [Nomad Batch Jobs](#-nomad-batch-jobs)
 - [Configuration](#-configuration)
 - [Testing](#-testing)
 - [Project Structure](#-project-structure)
@@ -52,9 +53,6 @@ python src/main.py --tickers AAPL --days 126 --simulations 5000
 
 # Results will be saved to ./results/ directory
 # Cache data will be stored in ./data/ directory
-
-# Try the mock data example for testing:
-python example_with_mock_data.py
 ```
 
 ## Installation
@@ -67,17 +65,6 @@ python example_with_mock_data.py
 - Google Cloud SDK (for GCS integration)
 
 ### Python Dependencies
-
-The project uses the following key dependencies:
-
-```
-numpy>=1.24.3          # Numerical computations
-pandas>=2.0.3           # Data manipulation
-matplotlib>=3.7.2       # Visualization
-# Stock data supported via CSV import or mock data generation
-google-cloud-storage    # GCS integration
-pytest>=7.4.0          # Testing framework
-```
 
 Install all dependencies:
 
@@ -193,35 +180,263 @@ nomad job run monte-carlo.nomad
 
 ```bash
 # Basic dispatch
-nomad job dispatch monte-carlo-simulation
+nomad job dispatch monte-carlo-batch
 
 # Custom parameters
 nomad job dispatch \
-  -meta TICKERS="AAPL,MSFT,TSLA" \
+  -meta TICKER="AAPL" \
   -meta DAYS="126" \
   -meta SIMULATIONS="5000" \
-  monte-carlo-simulation
+  monte-carlo-batch
 
 # With GCS upload
 nomad job dispatch \
-  -meta TICKERS="NVDA,AMD" \
+  -meta TICKER="NVDA" \
   -meta DAYS="60" \
   -meta GCS_BUCKET="gs://my-bucket/monte-carlo-results" \
   -meta GCS_PREFIX="simulation-$(date +%Y%m%d)" \
-  monte-carlo-simulation
+  monte-carlo-batch
 ```
 
 ### Monitoring Jobs
 
 ```bash
 # List job dispatches
-nomad job status monte-carlo-simulation
+nomad job status monte-carlo-batch
 
 # View logs
 nomad logs -f <allocation-id>
 
 # Access results
 nomad fs ls <allocation-id>/alloc/results/
+```
+
+## Nomad Batch Jobs
+
+This guide explains how to run Monte Carlo simulations for multiple tickers as separate Nomad batch jobs.
+
+### Overview
+
+The batch job system allows you to:
+- Run separate simulations for each ticker (better isolation)
+- Leverage shared caching to avoid API rate limits
+- Monitor and manage multiple jobs efficiently
+- Scale horizontally across Nomad cluster nodes
+
+### Quick Start
+
+#### 1. Deploy the Batch Job
+
+```bash
+# Deploy the parameterized job template
+nomad job run monte-carlo-batch.nomad
+```
+
+#### 2. Dispatch Multiple Ticker Jobs
+
+```bash
+# Dispatch jobs for multiple tickers
+./dispatch-batch-jobs.sh AAPL MSFT GOOG TSLA NVDA
+
+# With custom parameters
+./dispatch-batch-jobs.sh -d 365 -s 5000 AAPL MSFT GOOG TSLA
+
+# Monitor progress
+./dispatch-batch-jobs.sh -m AAPL MSFT GOOG
+```
+
+#### 3. Monitor Jobs
+
+```bash
+# Watch job status continuously
+nomad job status monte-carlo-batch
+
+# Show logs for specific allocation
+nomad alloc logs <ALLOC_ID>
+
+# List recent job dispatches
+nomad job status -short monte-carlo-batch
+```
+
+### Architecture
+
+#### Job Structure
+- **Parameterized Job**: `monte-carlo-batch` accepts ticker parameters
+- **Single Ticker Per Job**: Each dispatch runs one ticker simulation
+- **Shared Storage**: Cache and results volumes prevent API exhaustion
+- **Resource Isolation**: Jobs run independently with dedicated resources
+
+#### Volume Configuration
+- **Cache Volume**: `/opt/nomad/volumes/monte-carlo-cache`
+  - Shared Alpha Vantage API response cache
+  - Prevents hitting rate limits (25 calls/day)
+  - Persists between job runs
+- **Results Volume**: `/opt/nomad/volumes/monte-carlo-results`
+  - Centralized storage for simulation outputs
+  - Accessible across all nodes
+
+### Usage Examples
+
+#### Basic Dispatch
+```bash
+# Single ticker
+nomad job dispatch -meta TICKER=AAPL monte-carlo-batch
+
+# With custom parameters
+nomad job dispatch \
+  -meta TICKER=TSLA \
+  -meta DAYS=126 \
+  -meta SIMULATIONS=5000 \
+  monte-carlo-batch
+```
+
+#### Batch Operations
+```bash
+# Dispatch multiple jobs with monitoring
+./dispatch-batch-jobs.sh -m AAPL MSFT GOOG TSLA NVDA
+
+# Custom simulation parameters for all tickers
+./dispatch-batch-jobs.sh -d 60 -s 2500 AAPL MSFT GOOG
+
+# Wait for all jobs to complete
+./dispatch-batch-jobs.sh -w AAPL MSFT
+```
+
+#### Monitoring
+```bash
+# Real-time status monitoring
+watch nomad job status monte-carlo-batch
+
+# Show recent job summary
+nomad job status -short monte-carlo-batch
+
+# View logs for specific allocation
+nomad alloc logs <ALLOC_ID>
+
+# List available results
+nomad alloc fs <ALLOC_ID> /alloc/results/
+```
+
+### Batch Job Configuration
+
+#### Job Parameters
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `TICKER` | Stock ticker symbol (required) | - |
+| `DAYS` | Trading days to simulate | 252 |
+| `SIMULATIONS` | Number of Monte Carlo paths | 10000 |
+
+#### Resource Allocation
+- **CPU**: 1000 (1 core per job)
+- **Memory**: 1024 MB (1 GB per job)
+- **Disk**: Shared volumes for cache/results
+
+#### API Rate Limiting
+- **Alpha Vantage Free Tier**: 5 calls/minute, 25 calls/day
+- **Caching Strategy**: Shared volume prevents duplicate API calls
+- **Cache Duration**: 1 day (configurable)
+
+### File Structure
+
+```
+monte-carlo/
+├── monte-carlo-batch.nomad     # Parameterized job definition
+├── dispatch-batch-jobs.sh      # Job dispatch script
+├── setup-volumes.sh            # Volume setup script
+└── nomad-volumes.hcl          # Generated volume config
+```
+
+### Best Practices
+
+#### Performance Optimization
+1. **Stagger Job Dispatch**: Use small delays between dispatches
+2. **Resource Planning**: Monitor cluster capacity for concurrent jobs
+3. **Cache Warming**: Run popular tickers first to populate cache
+
+#### Monitoring Strategy
+1. **Real-time Monitoring**: Use `watch` mode during active periods
+2. **Log Analysis**: Check logs for API errors or simulation issues
+3. **Result Verification**: Validate output files after completion
+
+#### Error Handling
+1. **Failed Jobs**: Check logs for API limits or configuration errors
+2. **Retry Strategy**: Jobs auto-retry twice with 15s delay
+3. **Cleanup**: Use `cleanup` command to stop problematic jobs
+
+### Batch Job Troubleshooting
+
+#### Common Issues
+
+**Job Dispatch Fails**
+```bash
+# Check if job exists
+nomad job status monte-carlo-batch
+
+# Verify job is parameterized
+nomad job inspect monte-carlo-batch | grep -A5 parameterized
+```
+
+**Volume Mount Errors**
+```bash
+# Verify volumes exist on client nodes
+nomad node status -self | grep -A10 "Host Volumes"
+
+# Check directory permissions
+ls -la /opt/nomad/volumes/
+```
+
+**API Rate Limit Exceeded**
+```bash
+# Check cache utilization
+ls -la /opt/nomad/volumes/monte-carlo-cache/
+
+# Monitor API usage in job logs
+nomad alloc logs <ALLOC_ID> | grep "rate limit"
+```
+
+#### Debugging Commands
+
+```bash
+# Check job template
+nomad job plan monte-carlo-batch.nomad
+
+# Inspect running allocation
+nomad alloc status <ALLOC_ID>
+
+# Access allocation filesystem
+nomad alloc fs <ALLOC_ID> /alloc/results/
+
+# View allocation logs
+nomad alloc logs <ALLOC_ID>
+```
+
+### Advanced Usage
+
+#### Custom Job Templates
+You can modify `monte-carlo-batch.nomad` to:
+- Add GCS upload parameters
+- Adjust resource requirements
+- Configure different output formats
+- Add custom environment variables
+
+#### Integration with CI/CD
+```bash
+# Example GitLab CI job
+deploy_batch_simulation:
+  script:
+    - nomad job run monte-carlo-batch.nomad
+    - ./dispatch-batch-jobs.sh -w $TICKERS
+```
+
+#### Periodic Batch Jobs
+Uncomment the `periodic` block in the job file to enable scheduled runs:
+```hcl
+periodic {
+  cron             = "0 9 * * MON-FRI"  # 9 AM weekdays
+  prohibit_overlap = true
+  timezone         = "America/New_York"
+}
 ```
 
 ## Configuration
@@ -372,10 +587,10 @@ nomad job run monte-carlo.nomad
 
 # Or dispatch daily
 nomad job dispatch \
-  -meta TICKERS="^GSPC,^IXIC,^DJI" \
+  -meta TICKER="^GSPC" \
   -meta DAYS="5" \
   -meta GCS_BUCKET="gs://daily-market-analysis" \
-  monte-carlo-simulation
+  monte-carlo-batch
 ```
 
 ## Troubleshooting

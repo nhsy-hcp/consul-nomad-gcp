@@ -37,6 +37,7 @@ tasks:
 
   tf-output-dc1:
     aliases: ["tfo1"]
+    silent: true
     cmds:
       - rm terraform.tfstate || true
       - rm backend.tf || true
