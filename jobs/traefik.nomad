@@ -13,7 +13,7 @@ variable "email" {
 }
 
 job "traefik" {
-  type = "service" #"system"
+  type = "service"
   node_pool = "default"
 
   group "server" {
@@ -178,7 +178,6 @@ EOH
     volume "traefik" {
       type = "csi"
       source = "traefik-letsencrypt"
-      # access_mode = "single-node-single-writer"
       access_mode = "single-node-writer"
       attachment_mode = "file-system"
     }
