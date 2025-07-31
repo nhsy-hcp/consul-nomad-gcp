@@ -1,4 +1,5 @@
 # Production LetsEncrypt CA for Traefik TLS
-#ca_server = "https://acme-v02.api.letsencrypt.org/directory"
-domain    = "__REPLACE__"
-email     = "__REPLACE__"
+#ca_server    = "https://acme-v02.api.letsencrypt.org/directory"
+domain       = "__REPLACE__"
+email        = "__REPLACE__"
+consul_token = "__REPLACE__"

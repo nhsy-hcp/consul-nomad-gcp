@@ -12,6 +12,10 @@ variable "email" {
   type = string
 }
 
+variable "consul_token" {
+  type = string
+}
+
 job "traefik" {
   type = "service"
   node_pool = "default"
@@ -132,7 +136,7 @@ job "traefik" {
     [providers.consulCatalog.endpoint]
       address = "consul.${var.domain}:8501"
       scheme = "https"
-      token = "ConsulR0cks"
+      token = "${var.consul_token}"
       [providers.consulCatalog.endpoint.tls]
         insecureSkipVerify = true
   [providers.file]
