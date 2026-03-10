@@ -56,7 +56,7 @@ resource "google_compute_region_backend_service" "apps" {
   count = length(google_compute_region_instance_group_manager.clients_group)
   name  = "${var.cluster_name}-apigw-${count.index}"
   health_checks = [
-    google_compute_region_health_check.apps.id
+    google_compute_region_health_check.apps[0].id
   ]
   region                = var.gcp_region
   protocol              = "TCP"
@@ -69,6 +69,7 @@ resource "google_compute_region_backend_service" "apps" {
 
 
 resource "google_compute_region_health_check" "apps" {
+  count              = var.nomad_clients > 0 ? 1 : 0
   name               = "${var.cluster_name}-health-check-apigw"
   check_interval_sec = 1
   timeout_sec        = 1

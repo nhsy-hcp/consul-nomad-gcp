@@ -8,7 +8,7 @@ locals {
 
 output "apigw_load_balancers" {
   description = "IP addresses of the API gateway load balancers"
-  value       = google_compute_forwarding_rule.clients_lb[*].ip_address
+  value       = var.nomad_clients > 0 ? google_compute_forwarding_rule.clients_lb[*].ip_address : []
 }
 
 # tflint-ignore: terraform_naming_convention
