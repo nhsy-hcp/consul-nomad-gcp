@@ -247,6 +247,7 @@ Use `task` to manage the project.
 | `task check-server-logs`  | Check server logs via gcloud SSH and IAP tunnel.             |
 | `task consul-status`      | Check Consul cluster status (members, raft, services).       |
 | `task nomad-status`       | Check Nomad cluster status (servers, nodes, jobs).           |
+| `task status`             | Check both Consul and Nomad cluster status.                  |
 
 ## Project Structure Notes
 

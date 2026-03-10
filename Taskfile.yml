@@ -251,3 +251,9 @@ tasks:
         echo ""
         echo "=== Nomad Job Status ==="
         nomad job status
+
+  status:
+    desc: Check both Consul and Nomad cluster status
+    cmds:
+      - task: consul-status
+      - task: nomad-status
