@@ -52,11 +52,11 @@ resource "google_compute_firewall" "internal" {
 
 # Creating Load Balancing with different required resources
 
-resource "google_compute_region_backend_service" "apps" {
+resource "google_compute_region_backend_service" "client_ingress" {
   count = length(google_compute_region_instance_group_manager.clients_group)
   name  = "${var.cluster_name}-apigw-${count.index}"
   health_checks = [
-    google_compute_region_health_check.apps[0].id
+    google_compute_region_health_check.client_ingress[0].id
   ]
   region                = var.gcp_region
   protocol              = "TCP"
@@ -68,7 +68,7 @@ resource "google_compute_region_backend_service" "apps" {
 }
 
 
-resource "google_compute_region_health_check" "apps" {
+resource "google_compute_region_health_check" "client_ingress" {
   count              = var.nomad_clients > 0 ? 1 : 0
   name               = "${var.cluster_name}-health-check-apigw"
   check_interval_sec = 1
@@ -205,12 +205,12 @@ resource "google_compute_global_forwarding_rule" "consul" {
   target                = google_compute_target_https_proxy.consul.self_link
 }
 
-# The number of LBs for the apps will be equal to the number of region instance groups (one per admin partition)
+# The number of LBs for the client ingress will be equal to the number of region instance groups (one per admin partition)
 resource "google_compute_forwarding_rule" "clients_lb" {
-  count = length(google_compute_region_backend_service.apps)
+  count = length(google_compute_region_backend_service.client_ingress)
   name  = "${var.cluster_name}-clients_lb"
   #  ip_address = google_compute_address.global-ip.address
-  backend_service = google_compute_region_backend_service.apps[count.index].id
+  backend_service = google_compute_region_backend_service.client_ingress[count.index].id
   # target    = google_compute_target_pool.vm-pool.self_link
   region      = var.gcp_region
   ip_protocol = "TCP"
