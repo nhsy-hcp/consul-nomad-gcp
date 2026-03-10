@@ -43,7 +43,8 @@ resource "google_compute_instance_template" "instance_template" {
 
 resource "google_compute_instance_template" "nomad_clients" {
   # Let's create a count, so we create a template for each consul partition, and use only one if consul_partitions is empty
-  count = length(var.consul_partitions) != 0 ? length(var.consul_partitions) : 1
+  # Only create client resources if nomad_clients > 0
+  count = var.nomad_clients > 0 ? (length(var.consul_partitions) != 0 ? length(var.consul_partitions) : 1) : 0
 
   name_prefix  = "${var.cluster_name}-clients-${length(var.consul_partitions) != 0 ? var.consul_partitions[count.index] : "default"}-"
   machine_type = var.nomad_client_machine_type
@@ -319,11 +320,12 @@ resource "google_compute_region_per_instance_config" "with_script" {
 
 # Creating an instance group region for the clients
 resource "google_compute_region_instance_group_manager" "clients_group" {
-  # We create an instance group for the clients, so we can use the same instance template for all the instances. And we create a groupt per partition.
+  # We create an instance group for the clients, so we can use the same instance template for all the instances. And we create a group per partition.
+  # Only create client resources if nomad_clients > 0
   depends_on = [
     google_compute_instance_template.nomad_clients
   ]
-  count                     = length(var.consul_partitions) != 0 ? length(var.consul_partitions) : 1
+  count                     = var.nomad_clients > 0 ? (length(var.consul_partitions) != 0 ? length(var.consul_partitions) : 1) : 0
   name                      = "${var.cluster_name}-clients-mig-${count.index}"
   base_instance_name        = length(var.consul_partitions) != 0 ? "${var.cluster_name}-clients-${var.consul_partitions[count.index]}" : "${var.cluster_name}-clients"
   region                    = var.gcp_region
