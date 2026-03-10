@@ -1,0 +1,4 @@
+{"id":"fd9aba6f-88ab-408d-abb5-39f29f0c129f","ts":"2026-03-10T12:26:26.390Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/scripts/gcloud-destroy-mig.sh","version":"1.0.0","taskID":"f8ea97e4-32dd-4c8a-9661-c1585212f53e"}
+{"id":"13cf327a-df7d-44d9-85ca-690efd973232","ts":"2026-03-10T12:26:40.200Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/scripts/gcloud-destroy-lb.sh","version":"1.0.0","taskID":"f8ea97e4-32dd-4c8a-9661-c1585212f53e"}
+{"id":"8c92c869-17d5-4402-9f72-eb4b109b6736","ts":"2026-03-10T12:27:02.680Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/Taskfile.yml","version":"1.0.0","taskID":"f8ea97e4-32dd-4c8a-9661-c1585212f53e"}
+{"id":"877c9f7b-f559-492d-b308-d5d72979c5b0","ts":"2026-03-10T12:28:19.860Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/README.md","version":"1.0.0","taskID":"f8ea97e4-32dd-4c8a-9661-c1585212f53e"}
