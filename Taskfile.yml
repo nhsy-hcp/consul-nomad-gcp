@@ -221,3 +221,33 @@ tasks:
     desc: Check server logs via gcloud SSH and IAP
     cmds:
       - bash scripts/check-server-logs.sh {{.CLI_ARGS}}
+
+  consul-status:
+    desc: Check Consul cluster status
+    silent: true
+    cmds:
+      - |
+        eval $(terraform output -raw eval_vars)
+        echo "=== Consul Members ==="
+        consul members
+        echo ""
+        echo "=== Consul Operator Raft List-Peers ==="
+        consul operator raft list-peers
+        echo ""
+        echo "=== Consul Catalog Services ==="
+        consul catalog services
+
+  nomad-status:
+    desc: Check Nomad cluster status
+    silent: true
+    cmds:
+      - |
+        eval $(terraform output -raw eval_vars)
+        echo "=== Nomad Server Members ==="
+        nomad server members
+        echo ""
+        echo "=== Nomad Node Status ==="
+        nomad node status
+        echo ""
+        echo "=== Nomad Job Status ==="
+        nomad job status
