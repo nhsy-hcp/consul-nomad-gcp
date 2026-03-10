@@ -53,9 +53,8 @@ resource "google_compute_instance_template" "nomad_clients" {
 
   // boot disk
   disk {
-    source_image = local.client_vm_image
-    # source_image = local.vm_image
-    device_name = "consul-${var.cluster_name}"
+    source_image = local.vm_image
+    device_name  = "consul-${var.cluster_name}"
     # source = google_compute_region_disk.vault_disk.name
     disk_size_gb = var.nomad_client_disk_size
   }
@@ -100,7 +99,8 @@ resource "google_compute_instance_template" "nomad_clients" {
 
 resource "google_compute_instance_template" "nomad_gpu_clients" {
   # Let's create a count, so we create a template for each consul partition, and use only one if consul_partitions is empty
-  count = length(var.consul_partitions) != 0 ? length(var.consul_partitions) : 1
+  # Only create GPU resources if nomad_gpu_clients > 0
+  count = var.nomad_gpu_clients > 0 ? (length(var.consul_partitions) != 0 ? length(var.consul_partitions) : 1) : 0
 
   name_prefix  = "${var.cluster_name}-clients-gpu-${length(var.consul_partitions) != 0 ? var.consul_partitions[count.index] : "default"}-"
   machine_type = var.nomad_client_machine_type
@@ -110,9 +110,8 @@ resource "google_compute_instance_template" "nomad_gpu_clients" {
 
   // boot disk
   disk {
-    source_image = local.client_vm_image
-    # source_image = local.vm_image
-    device_name = "consul-${var.cluster_name}"
+    source_image = local.gpu_client_vm_image
+    device_name  = "consul-${var.cluster_name}"
     # source = google_compute_region_disk.vault_disk.name
     disk_size_gb = var.nomad_client_disk_size
   }
@@ -375,13 +374,14 @@ resource "google_compute_region_instance_group_manager" "clients_group" {
   }
 }
 
-# Creating an instance group region for the clients
+# Creating an instance group region for the GPU clients
 resource "google_compute_region_instance_group_manager" "nomad_gpu_clients" {
-  # We create an instance group for the clients, so we can use the same instance template for all the instances. And we create a groupt per partition.
+  # We create an instance group for the GPU clients, so we can use the same instance template for all the instances. And we create a group per partition.
+  # Only create GPU resources if nomad_gpu_clients > 0
   depends_on = [
     google_compute_instance_template.nomad_gpu_clients
   ]
-  count                     = length(var.consul_partitions) != 0 ? length(var.consul_partitions) : 1
+  count                     = var.nomad_gpu_clients > 0 ? (length(var.consul_partitions) != 0 ? length(var.consul_partitions) : 1) : 0
   name                      = "${var.cluster_name}-clients-gpu-mig-${count.index}"
   base_instance_name        = length(var.consul_partitions) != 0 ? "${var.cluster_name}-clients-gpu-${var.consul_partitions[count.index]}" : "${var.cluster_name}-clients-gpu"
   region                    = var.gcp_region

@@ -11,7 +11,7 @@ locals {
   consul_fqdn = trimsuffix(google_dns_record_set.consul[0].name, ".")
   nomad_fqdn  = trimsuffix(google_dns_record_set.nomad[0].name, ".")
 
-  client_vm_image = var.nomad_gpu_clients > 0 ? data.google_compute_image.client_image[0].self_link : null
+  gpu_client_vm_image = var.nomad_gpu_clients > 0 ? data.google_compute_image.client_image[0].self_link : data.google_compute_image.my_image.self_link
 
   nomad_https_url  = "https://${local.nomad_fqdn}:4646"
   consul_https_url = "https://${local.consul_fqdn}:8501"
