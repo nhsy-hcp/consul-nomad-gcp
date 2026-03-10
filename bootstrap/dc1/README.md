@@ -16,10 +16,10 @@
 
 | Name | Version |
 |------|---------|
-| <a name="provider_google"></a> [google](#provider\_google) | 6.38.0 |
-| <a name="provider_google-beta"></a> [google-beta](#provider\_google-beta) | 6.38.0 |
-| <a name="provider_random"></a> [random](#provider\_random) | 3.7.2 |
-| <a name="provider_tfe"></a> [tfe](#provider\_tfe) | 0.66.0 |
+| <a name="provider_google"></a> [google](#provider\_google) | 7.22.0 |
+| <a name="provider_google-beta"></a> [google-beta](#provider\_google-beta) | 7.22.0 |
+| <a name="provider_random"></a> [random](#provider\_random) | 3.8.1 |
+| <a name="provider_tfe"></a> [tfe](#provider\_tfe) | 0.74.1 |
 
 ## Modules
 
