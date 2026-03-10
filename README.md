@@ -244,6 +244,7 @@ Use `task` to manage the project.
 | `task gcloud-destroy-mig` | Destroys all managed instance groups via gcloud CLI.         |
 | `task gcloud-destroy-lb`  | Destroys all load balancers and related resources via gcloud. |
 | `task gcloud-destroy-all` | Destroys both MIGs and load balancers via gcloud CLI.        |
+| `task check-server-logs`  | Check server logs via gcloud SSH and IAP tunnel.             |
 
 ## Project Structure Notes
 

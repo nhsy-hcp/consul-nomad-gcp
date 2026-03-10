@@ -216,3 +216,8 @@ tasks:
     cmds:
       - task: gcloud-destroy-lb
       - task: gcloud-destroy-mig
+
+  check-server-logs:
+    desc: Check server logs via gcloud SSH and IAP
+    cmds:
+      - bash scripts/check-server-logs.sh {{.CLI_ARGS}}
