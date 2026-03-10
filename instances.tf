@@ -86,6 +86,8 @@ resource "google_compute_instance_template" "nomad_clients" {
     zone               = var.gcp_region,
     node_name          = "clients-${count.index}",
     partition          = var.consul_partitions != [""] ? element(local.admin_partitions, count.index) : "default"
+    cni_plugin_version = var.cni_plugin_version,
+    consul_cni_version = var.consul_cni_version
   })
   labels = {
     node = "client-${count.index}"
@@ -145,6 +147,8 @@ resource "google_compute_instance_template" "nomad_gpu_clients" {
     zone               = var.gcp_region,
     node_name          = "client-gpu-${count.index}",
     partition          = var.consul_partitions != [""] ? element(local.admin_partitions, count.index) : "default"
+    cni_plugin_version = var.cni_plugin_version,
+    consul_cni_version = var.consul_cni_version
   })
   labels = {
     node = "client-gpu-${count.index}"
@@ -195,7 +199,7 @@ resource "google_compute_instance_from_template" "vm_cts" {
 
 # Create the instance group from the vms in a region
 # Create instance group for the region
-resource "google_compute_region_instance_group_manager" "hashi-group" {
+resource "google_compute_region_instance_group_manager" "hashi_group" {
   depends_on = [
     google_compute_instance_template.instance_template
   ]
@@ -282,8 +286,8 @@ resource "google_compute_region_instance_group_manager" "hashi-group" {
 resource "google_compute_region_per_instance_config" "with_script" {
   count = var.server_nodes
 
-  region                        = google_compute_region_instance_group_manager.hashi-group.region
-  region_instance_group_manager = google_compute_region_instance_group_manager.hashi-group.name
+  region                        = google_compute_region_instance_group_manager.hashi_group.region
+  region_instance_group_manager = google_compute_region_instance_group_manager.hashi_group.name
   name                          = "${var.cluster_name}-server-${count.index}-${local.unique_id}"
   preserved_state {
     # internal_ip {
@@ -315,7 +319,7 @@ resource "google_compute_region_per_instance_config" "with_script" {
 
 
 # Creating an instance group region for the clients
-resource "google_compute_region_instance_group_manager" "clients-group" {
+resource "google_compute_region_instance_group_manager" "clients_group" {
   # We create an instance group for the clients, so we can use the same instance template for all the instances. And we create a groupt per partition.
   depends_on = [
     google_compute_instance_template.nomad_clients

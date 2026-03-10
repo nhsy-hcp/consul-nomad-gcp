@@ -1,23 +1,6 @@
 # Copyright (c) HashiCorp, Inc.
 # SPDX-License-Identifier: MPL-2.0
 
-# Data source used to get the project number programmatically.
-#
-# https://registry.terraform.io/providers/hashicorp/google/latest/docs/data-sources/project
-data "google_project" "project" {
-}
-
-data "http" "tfc" {
-  url = "https://${var.tfc_hostname}/.well-known/jwks"
-
-  lifecycle {
-    postcondition {
-      condition     = self.status_code == 200
-      error_message = "Failed to get JWKS from TFC"
-    }
-  }
-}
-
 resource "random_pet" "unique_id" {
   length    = 1
   separator = ""

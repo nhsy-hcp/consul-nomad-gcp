@@ -6,7 +6,6 @@ tfc_project         = "__REPLACE__"
 tfc_workspace       = "__REPLACE__"
 
 tfc_variables = {
-  gcp_project              = { value = "__REPLACE__" }
   gcp_instance             = { value = "n2-standard-2" }
   hcp_project_id           = { value = "__REPLACE__" }
   server_nodes             = { value = 3 }

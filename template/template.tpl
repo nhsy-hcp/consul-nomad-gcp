@@ -10,7 +10,7 @@ CONSUL_LICENSE="${consul_license}"
 NOMAD_LICENSE="${nomad_license}"
 NOMAD_DIR="/etc/nomad.d"
 NOMAD_URL="https://releases.hashicorp.com/nomad"
-CNI_PLUGIN_VERSION="v1.5.1"
+CNI_PLUGIN_VERSION="v1.9.0"
 
 
 # ---- Check directories ----
@@ -331,4 +331,3 @@ echo "==> Bootstrap Nomad..."
 # sleep 20
 nomad acl bootstrap $NOMAD_DIR/nomad_bootstrap
 %{ endif }
-

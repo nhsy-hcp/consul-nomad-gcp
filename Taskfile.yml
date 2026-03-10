@@ -1,7 +1,49 @@
+---
 # https://taskfile.dev
 version: '3'
 
 tasks:
+
+  init:
+    desc: Perform one-time environment setup
+    cmds:
+      - pre-commit install
+      - terraform init
+
+  lint:
+    desc: Run all code quality, formatting, and security checks
+    cmds:
+      - 'yamllint -d "{extends: default, rules: {line-length: disable}}" .'
+      - pre-commit run --all-files
+
+  tf-init:
+    desc: Initialize Terraform
+    cmds:
+      - terraform init
+
+  tf-validate:
+    aliases: ["validate"]
+    desc: Validate Terraform configuration
+    cmds:
+      - terraform validate
+
+  tf-fmt:
+    aliases: ["fmt"]
+    desc: Format Terraform files
+    cmds:
+      - terraform fmt -recursive
+
+  tf-plan:
+    aliases: ["plan"]
+    desc: Run Terraform plan
+    cmds:
+      - terraform plan
+
+  tf-destroy:
+    aliases: ["destroy"]
+    desc: Destroy Terraform infrastructure
+    cmds:
+      - terraform destroy --auto-approve
 
   clean:
     cmds:
@@ -66,13 +108,6 @@ tasks:
         echo $NOMAD_TOKEN | pbcopy
         echo "Nomad token copied to clipboard."
         echo "Consul token: $CONSUL_HTTP_TOKEN"
-#    env:
-#      CONSUL_HTTP_ADDR:
-#        sh: terraform output CONSUL_HTTP_ADDR
-#      NOMAD_ADDR:
-#        sh: terraform output NOMAD_ADDR
-#      NOMAD_TOKEN:
-#        sh: terraform output -raw NOMAD_TOKEN
 
   echoserver:
     desc: Open the echoserver in the browser

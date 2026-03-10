@@ -48,22 +48,22 @@ def get_default_dirs():
 def main():
     # Get environment-appropriate default directories
     defaults = get_default_dirs()
-    
+
     parser = argparse.ArgumentParser(description='Monte Carlo Stock Price Simulation')
-    
-    parser.add_argument('--tickers', '-t', nargs='+', 
+
+    parser.add_argument('--tickers', '-t', nargs='+',
                        help='Stock ticker symbols (e.g., AAPL MSFT GOOGL)')
     parser.add_argument('--days', '-d', type=int, default=252,
                        help='Number of days to simulate (default: 252)')
     parser.add_argument('--simulations', '-s', type=int, default=10000,
                        help='Number of Monte Carlo simulations (default: 10000)')
-    parser.add_argument('--config', '-c', 
+    parser.add_argument('--config', '-c',
                        default=defaults['config'],
                        help='Path to configuration file')
-    parser.add_argument('--output-dir', '-o', 
+    parser.add_argument('--output-dir', '-o',
                        default=defaults['output'],
                        help='Output directory for results')
-    parser.add_argument('--cache-dir', 
+    parser.add_argument('--cache-dir',
                        default=defaults['cache'],
                        help='Directory for data cache')
     parser.add_argument('--no-plots', action='store_true',
@@ -71,52 +71,52 @@ def main():
     parser.add_argument('--confidence-levels', nargs='+', type=float,
                        default=[0.05, 0.95],
                        help='Confidence levels for VaR calculation')
-    parser.add_argument('--gcs-bucket', 
+    parser.add_argument('--gcs-bucket',
                        help='Google Cloud Storage bucket URL (e.g., gs://bucket/path)')
     parser.add_argument('--gcs-prefix', default='monte-carlo-results',
                        help='GCS object prefix for uploaded files')
-    
+
     args = parser.parse_args()
-    
+
     # Load configuration file
     config = load_config(args.config)
-    
+
     # Override config with command line arguments
     if args.tickers:
         config['tickers'] = args.tickers
     if not config.get('tickers'):
         print("Error: No ticker symbols provided. Use --tickers or specify in config file.")
         sys.exit(1)
-    
+
     config['days'] = args.days
     config['simulations'] = args.simulations
     config['output_dir'] = args.output_dir
     config['cache_dir'] = args.cache_dir
     config['confidence_levels'] = args.confidence_levels
-    
+
     # Ensure output directories exist
     os.makedirs(args.output_dir, exist_ok=True)
     os.makedirs(args.cache_dir, exist_ok=True)
-    
+
     print(f"Starting Monte Carlo simulation for: {', '.join(config['tickers'])}")
     print(f"Simulations: {config['simulations']}, Days: {config['days']}")
-    
+
     try:
         # Initialize components
         data_fetcher = DataFetcher(cache_dir=args.cache_dir, config=config)
         simulator = MonteCarloSimulator()
-        
+
         results = {}
-        
+
         for ticker in config['tickers']:
             print(f"\nProcessing {ticker}...")
-            
+
             # Fetch historical data
             historical_data, is_from_cache = data_fetcher.fetch_ticker_data(ticker, period="2y")
             if historical_data.empty:
                 print(f"Warning: No data found for {ticker}, skipping...")
                 continue
-            
+
             # Run Monte Carlo simulation
             simulation_results = simulator.run_simulation(
                 historical_data=historical_data,
@@ -124,30 +124,30 @@ def main():
                 simulations=config['simulations'],
                 confidence_levels=config['confidence_levels']
             )
-            
+
             results[ticker] = simulation_results
-            
+
             # Save results to CSV
             output_file = os.path.join(args.output_dir, f"{ticker}_simulation.csv")
             simulation_results['paths'].to_csv(output_file, index=False)
             print(f"Results saved to: {output_file}")
-            
+
             # Print summary statistics
             stats = simulation_results['statistics']
             print(f"Final Price Statistics:")
             print(f"  Mean: ${stats['mean']:.2f}")
             print(f"  Median: ${stats['median']:.2f}")
             print(f"  Std Dev: ${stats['std']:.2f}")
-            
+
             var_stats = simulation_results['var']
             for level, var_value in var_stats.items():
                 print(f"  VaR ({level*100:.0f}%): ${var_value:.2f}")
-        
+
         # Generate visualizations
         if not args.no_plots and results:
             print("\nGenerating visualizations...")
             visualizer = Visualizer()
-            
+
             for ticker, result in results.items():
                 print(f"Creating plots for {ticker}...")
                 visualizer.create_simulation_plots(
@@ -155,7 +155,7 @@ def main():
                     results=result,
                     output_dir=args.output_dir
                 )
-        
+
         # Upload results to Google Cloud Storage if bucket is specified
         gcs_upload_success = True
         if args.gcs_bucket and results:
@@ -167,14 +167,14 @@ def main():
                     bucket_url=args.gcs_bucket,
                     prefix=args.gcs_prefix
                 )
-                
+
                 if gcs_upload_success:
                     print(f"Successfully uploaded {len(uploaded_files)} files to GCS:")
                     for local_file, gcs_url in uploaded_files.items():
                         print(f"  {local_file} -> {gcs_url}")
                 else:
                     print(f"\nUpload completed with errors. {len(uploaded_files)} files uploaded successfully.")
-                    
+
             except Exception as gcs_error:
                 print(f"\nError: Failed to upload results to GCS: {gcs_error}")
                 print("Results are still available locally.")
@@ -187,12 +187,12 @@ def main():
             else:
                 print(f"Warning: GCS upload had errors. Check logs above.")
         print(f"Local results available in: {args.output_dir}")
-        
+
         # Exit with error code if GCS upload failed
         if args.gcs_bucket and not gcs_upload_success:
             print("\nExiting with error code due to GCS upload failures.")
             sys.exit(1)
-        
+
     except Exception as e:
         print(f"Error during simulation: {e}")
         sys.exit(1)

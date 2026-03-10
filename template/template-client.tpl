@@ -11,7 +11,8 @@ CONSUL_LICENSE="${consul_license}"
 NOMAD_LICENSE="${nomad_license}"
 NOMAD_DIR="/etc/nomad.d"
 NOMAD_URL="https://releases.hashicorp.com/nomad"
-CNI_PLUGIN_VERSION="v1.5.1"
+CNI_PLUGIN_VERSION="${cni_plugin_version}"
+CONSUL_CNI_VERSION="${consul_cni_version}"
 
 
 # ---- Adding some extra packages for CTS ----
@@ -46,12 +47,8 @@ else
     sudo chown -R consul:consul /opt/consul
 fi
 
-
-
-
 # Creating a directory for audit
 sudo mkdir -p /opt/consul/audit
-
 
 # ---- Enterprise Licenses ----
 echo $CONSUL_LICENSE | sudo tee $CONSUL_DIR/license.hclic > /dev/null
@@ -203,7 +200,7 @@ sudo tar -C /opt/cni/bin -xzf cni-plugins.tgz
 
 # Installing Consul CNI
 export ARCH_CNI="$( [ $(uname -m) = aarch64 ] && echo arm64 || echo amd64)"
-curl -L -o consul-cni.zip "https://releases.hashicorp.com/consul-cni/1.5.1/consul-cni_1.5.1_linux_$ARCH_CNI".zip
+curl -L -o consul-cni.zip "https://releases.hashicorp.com/consul-cni/$$CONSUL_CNI_VERSION/consul-cni_$${CONSUL_CNI_VERSION}_linux_$$ARCH_CNI".zip
 sudo unzip consul-cni.zip -d /opt/cni/bin -x LICENSE.txt
 
 
@@ -226,7 +223,7 @@ acl  {
 }
 consul {
   token = "${bootstrap_token}"
-  
+
   service_identity {
     aud = ["consul.io"]
     ttl = "1h"

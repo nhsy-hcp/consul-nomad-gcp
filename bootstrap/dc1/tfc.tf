@@ -92,6 +92,16 @@ resource "tfe_variable" "tfc_gcp_service_account_email" {
   description = "The GCP service account email runs will use to authenticate."
 }
 
+resource "tfe_variable" "gcp_project" {
+  variable_set_id = tfe_variable_set.default.id
+
+  key      = "gcp_project"
+  value    = var.gcp_project_id
+  category = "terraform"
+
+  description = "GCP Project ID for the workspace"
+}
+
 resource "tfe_variable" "workspace" {
   for_each = var.tfc_variables
   # workspace_id = tfe_workspace.default.id

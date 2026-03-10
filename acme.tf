@@ -1,7 +1,7 @@
 # Generate letsencrypt TLS cert
 resource "tls_private_key" "default" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
+  algorithm   = "ECDSA"
+  ecdsa_curve = "P384"
 }
 
 resource "acme_registration" "default" {

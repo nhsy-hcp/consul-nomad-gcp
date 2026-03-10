@@ -52,14 +52,14 @@ sudo groupadd docker
 sudo usermod -aG docker $USER
 
 
-newgrp docker 
+newgrp docker
 
 # Downloading Consul binary according to the version specified in the variables
 curl -s -O ${CONSUL_URL}/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_${OS_SUFFIX}.zip
 curl -s -O ${CONSUL_URL}/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_SHA256SUMS
 curl -s -O ${CONSUL_URL}/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_SHA256SUMS.sig
 
-# Installing Consul binary and configuring 
+# Installing Consul binary and configuring
 unzip -o consul_${CONSUL_VERSION}_${OS_SUFFIX}.zip
 sudo chown root:root consul
 sudo mv consul /usr/bin/
@@ -72,7 +72,7 @@ sudo useradd --system --home $CONSUL_DIR --shell /bin/false consul
 sudo mkdir -p $CONSUL_DATA
 sudo chown -R consul:consul $CONSUL_DATA
 
-# Creating CA Certificate for Consul and saving it 
+# Creating CA Certificate for Consul and saving it
 sudo mkdir -p $CONSUL_DIR/tls
 consul tls ca create
 sudo mv consul-agent-ca*.pem $CONSUL_DIR/tls

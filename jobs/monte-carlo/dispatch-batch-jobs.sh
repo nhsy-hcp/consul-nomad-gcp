@@ -38,29 +38,30 @@ warning() {
 cleanup_child_jobs() {
     local job_name="$1"
     log "Cleaning up child jobs for: $job_name"
-    
+
     # Get all jobs with this parent job name
     local child_jobs=()
     while IFS= read -r job_line; do
         # Skip header line and empty lines
         [[ "$job_line" =~ ^ID || -z "$job_line" ]] && continue
-        
+
         # Extract job ID (first field)
-        local job_id=$(echo "$job_line" | awk '{print $1}')
-        
+        local job_id
+        job_id=$(echo "$job_line" | awk '{print $1}')
+
         # Check if it's a dispatch job (contains the parent job name and dispatch pattern)
         if [[ "$job_id" == "$job_name/dispatch-"* ]]; then
             child_jobs+=("$job_id")
         fi
     done < <(nomad job status 2>/dev/null)
-    
+
     if [[ ${#child_jobs[@]} -eq 0 ]]; then
         warning "No child jobs found for job: $job_name"
         return 0
     fi
-    
+
     log "Found ${#child_jobs[@]} child jobs to stop"
-    
+
     # Stop each child job
     local stopped_count=0
     for job_id in "${child_jobs[@]}"; do
@@ -72,7 +73,7 @@ cleanup_child_jobs() {
             error "Failed to stop: $job_id"
         fi
     done
-    
+
     success "Stopped $stopped_count out of ${#child_jobs[@]} child jobs"
     return 0
 }
@@ -167,13 +168,13 @@ if [[ "$CLEANUP_JOBS" == true ]]; then
         error "Nomad CLI not found. Please install Nomad client."
         exit 1
     fi
-    
+
     # Check if job exists
     if ! nomad job inspect "$JOB_NAME" &> /dev/null; then
         error "Job '$JOB_NAME' not found."
         exit 1
     fi
-    
+
     cleanup_child_jobs "$JOB_NAME"
     exit 0
 fi
@@ -209,14 +210,14 @@ log "Parameters: Days=$DAYS, Simulations=$SIMULATIONS"
 # Dispatch jobs for each ticker
 for ticker in "${TICKERS[@]}"; do
     log "Dispatching job for ticker: $ticker"
-    
+
     # Dispatch the job and capture the job ID
     if JOB_OUTPUT=$(nomad job dispatch \
         -meta TICKER="$ticker" \
         -meta DAYS="$DAYS" \
         -meta SIMULATIONS="$SIMULATIONS" \
         "$JOB_NAME" 2>&1); then
-        
+
         # Extract job ID from output (format: "Dispatched Job ID: <id>")
         if JOB_ID=$(echo "$JOB_OUTPUT" | grep -o "Dispatched Job ID: [a-z0-9-]*" | cut -d' ' -f4); then
             DISPATCHED_JOBS+=("$JOB_ID")
@@ -228,7 +229,7 @@ for ticker in "${TICKERS[@]}"; do
     else
         error "Failed to dispatch job for $ticker: $JOB_OUTPUT"
     fi
-    
+
     # Small delay to avoid overwhelming the scheduler
     sleep 1
 done
@@ -246,12 +247,12 @@ fi
 # Monitor jobs if requested
 if [[ "$MONITOR_JOBS" == true || "$WAIT_FOR_COMPLETION" == true ]]; then
     log "Monitoring job progress..."
-    
+
     while true; do
         running_count=0
         completed_count=0
         failed_count=0
-        
+
         for job_id in "${DISPATCHED_JOBS[@]}"; do
             if status=$(nomad job status -short "$job_id" 2>/dev/null); then
                 if echo "$status" | grep -q "running"; then
@@ -263,23 +264,23 @@ if [[ "$MONITOR_JOBS" == true || "$WAIT_FOR_COMPLETION" == true ]]; then
                 fi
             fi
         done
-        
+
         log "Job Status: Running=$running_count, Completed=$completed_count, Failed=$failed_count"
-        
+
         # Break if all jobs are done
         if [[ $((completed_count + failed_count)) -eq ${#DISPATCHED_JOBS[@]} ]]; then
             break
         fi
-        
+
         # Break if only monitoring (not waiting)
         if [[ "$MONITOR_JOBS" == true && "$WAIT_FOR_COMPLETION" == false ]]; then
             log "Monitoring stopped. Jobs are still running in the background."
             break
         fi
-        
+
         sleep 10
     done
-    
+
     if [[ "$WAIT_FOR_COMPLETION" == true ]]; then
         if [[ $failed_count -eq 0 ]]; then
             success "All jobs completed successfully!"

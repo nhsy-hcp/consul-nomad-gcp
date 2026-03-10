@@ -1,5 +1,6 @@
 variable "gcp_region" {
   description = "Google Cloud region"
+  type        = string
   default     = "europe-west1"
 }
 # variable "gcp_zone" {
@@ -23,9 +24,11 @@ variable "gcp_zones" {
 }
 variable "gcp_project" {
   description = "Cloud project"
+  type        = string
 }
 variable "gcp_instance" {
   description = "Machine type for nodes"
+  type        = string
 }
 # variable "gcp_zones" {
 #   description = "availability zones"
@@ -33,44 +36,50 @@ variable "gcp_instance" {
 # }
 variable "server_nodes" {
   description = "number of server nodes"
+  type        = number
   default     = 3
 }
 variable "nomad_clients" {
   description = "number of client nodes"
+  type        = number
   default     = 2
 }
 variable "cluster_name" {
   description = "Name of the cluster"
+  type        = string
 }
 variable "owner" {
   description = "Owner of the cluster"
-}
-variable "server" {
-  description = "Prefix for server names"
-  default     = "consul-server"
+  type        = string
 }
 variable "consul_license" {
   description = "Consul Enterprise license text"
+  type        = string
 }
 variable "nomad_license" {
   description = "Nomad Enterprise license text"
+  type        = string
 }
 variable "tfc_token" {
   description = "Terraform Cloud token to use for CTS"
+  type        = string
   default     = ""
 }
 
 variable "consul_bootstrap_token" {
   description = "Terraform Cloud token to use for CTS"
-  default     = "Consu43v3r"
+  type        = string
 }
 
 variable "image_family" {
-  default = "hashistack"
+  description = "Image family to use for compute instances"
+  type        = string
+  default     = "hashistack"
 }
 
 variable "dns_zone" {
   description = "An already existing DNS zone in your GCP project"
+  type        = string
   default     = null
 }
 
@@ -80,36 +89,20 @@ variable "consul_partitions" {
   default     = []
 }
 
-variable "use_hcp_packer" {
-  description = "Use HCP Packer to store images"
-  default     = false
-}
-
-variable "hcp_packer_bucket" {
-  description = "Bucket name for HCP Packer"
-  default     = "consul-nomad"
-}
-
-variable "hcp_packer_channel" {
-  description = "Channel for HCP Packer"
-  default     = "latest"
-}
-
-variable "hcp_packer_region" {
-  description = "Region for HCP Packer"
-  default     = "europe-west1-c"
-}
 variable "hcp_project_id" {
   description = "HCP Project ID"
+  type        = string
 }
 
 variable "enable_cts" {
   description = "Set it to true to deploy a node for CTS"
+  type        = string
   default     = "false"
 }
 
 variable "subnetwork_cidr" {
   description = "CIDR for the subnetwork"
+  type        = string
   default     = "10.2.0.0/16"
 }
 
@@ -121,6 +114,7 @@ variable "nomad_client_disk_size" {
 
 variable "nomad_client_machine_type" {
   description = "Machine type for nodes"
+  type        = string
   default     = "n1-standard-4"
 }
 
@@ -132,11 +126,13 @@ variable "nomad_client_preemptible" {
 
 variable "nomad_gpu_clients" {
   description = "number of gpu client nodes"
+  type        = number
   default     = 0
 }
 
 variable "compute_sa_roles" {
-  type = set(string)
+  description = "IAM roles to assign to the compute service account"
+  type        = set(string)
   default = [
     "roles/logging.logWriter",
     "roles/monitoring.metricWriter",
@@ -149,4 +145,17 @@ variable "compute_sa_roles" {
 
 variable "letsencrypt_email" {
   description = "Email for Let's Encrypt"
+  type        = string
+}
+
+variable "cni_plugin_version" {
+  description = "Version of CNI plugins to install"
+  type        = string
+  default     = "v1.9.0"
+}
+
+variable "consul_cni_version" {
+  description = "Version of Consul CNI plugin to install"
+  type        = string
+  default     = "1.9.5"
 }

@@ -1,29 +1,3 @@
-terraform {
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 6.0"
-    }
-    consul = {
-      source  = "hashicorp/consul"
-      version = "~> 2.0"
-    }
-    hcp = {
-      source  = "hashicorp/hcp"
-      version = "~> 0.108.0"
-    }
-    acme = {
-      source  = "vancluever/acme"
-      version = "~> 2.0"
-    }
-    tls = {
-      source  = "hashicorp/tls"
-      version = "~> 4.0"
-    }
-  }
-}
-
-
 provider "google" {
   project = var.gcp_project
   region  = var.gcp_region

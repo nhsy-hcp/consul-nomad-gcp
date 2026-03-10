@@ -18,7 +18,7 @@ echo "deb [arch=amd64 signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gp
 
 sudo apt-get update
 
-sudo apt-get install consul-terraform-sync-enterprise jq -y 
+sudo apt-get install consul-terraform-sync-enterprise jq -y
 
 
 

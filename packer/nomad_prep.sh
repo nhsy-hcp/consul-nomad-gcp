@@ -46,7 +46,7 @@ curl -s -O ${NOMAD_URL}/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_${OS_SUFFIX}.zip
 curl -s -O ${NOMAD_URL}/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_SHA256SUMS
 curl -s -O ${NOMAD_URL}/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_SHA256SUMS.sig
 
-# Installing Nomad binary and configuring 
+# Installing Nomad binary and configuring
 unzip -o nomad_${NOMAD_VERSION}_${OS_SUFFIX}.zip
 sudo chown root:root nomad
 sudo mv nomad /usr/bin/
@@ -62,6 +62,3 @@ sudo chown -R nomad:nomad $NOMAD_DATA
 
 # Need to add nomad user to Docker group to make the Docker driver available.
 sudo usermod -G docker -a nomad
-
-
-

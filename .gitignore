@@ -1,28 +1,80 @@
-### Terraform template
+# ============================================================================
+# Terraform
+# ============================================================================
 # Local .terraform directories
 **/.terraform/*
-**/.terraform.lock.hcl
-**/.terragrunt-cache/*
+.terraform/
+.terraform.lock.hcl
 
-# .tfstate files
-
-# Local dev files
-.idea
-
-# Terraform state
-**/terraform.tfstate.d/*
+# State files
 *.tfstate
 *.tfstate.*
+**/terraform.tfstate.d/*
 
-# Terraform plan
+# Plan files
 *.plan
 
-# local vars
-**/.env
+# Variable files with secrets
 terraform.tfvars
+**/.env
 
+# Backend configuration files
+backend.tf
+*-backend.config
+
+# ============================================================================
+# HashiCorp Licenses
+# ============================================================================
 *.hclic
 
-**/.claude
-.zed
+# ============================================================================
+# Python
+# ============================================================================
+**/__pycache__/*
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
 
+# ============================================================================
+# IDE and Editor
+# ============================================================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ============================================================================
+# AI Assistant Directories
+# ============================================================================
+.bob/
+.claude/
+.gemini/
+.zed/
+
+# ============================================================================
+# Project Documentation (AI-specific)
+# ============================================================================
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+
+# ============================================================================
+# Project-Specific
+# ============================================================================
+.plans/
+
+# Monte Carlo job data and results
+jobs/monte-carlo/data/
+jobs/monte-carlo/results/
+
+# ============================================================================
+# Backup and Temporary Files
+# ============================================================================
+*.bak
+*.tmp
+.tmp/
+notes.txt

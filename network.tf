@@ -53,7 +53,7 @@ resource "google_compute_firewall" "internal" {
 # Creating Load Balancing with different required resources
 
 resource "google_compute_region_backend_service" "apps" {
-  count = length(google_compute_region_instance_group_manager.clients-group)
+  count = length(google_compute_region_instance_group_manager.clients_group)
   name  = "${var.cluster_name}-apigw-${count.index}"
   health_checks = [
     google_compute_region_health_check.apps.id
@@ -63,7 +63,7 @@ resource "google_compute_region_backend_service" "apps" {
   load_balancing_scheme = "EXTERNAL"
   backend {
     balancing_mode = "CONNECTION"
-    group          = google_compute_region_instance_group_manager.clients-group[count.index].instance_group
+    group          = google_compute_region_instance_group_manager.clients_group[count.index].instance_group
   }
 }
 
@@ -109,7 +109,7 @@ resource "google_compute_backend_service" "nomad" {
   }
 
   backend {
-    group           = google_compute_region_instance_group_manager.hashi-group.instance_group
+    group           = google_compute_region_instance_group_manager.hashi_group.instance_group
     balancing_mode  = "UTILIZATION"
     capacity_scaler = 1.0
   }
@@ -145,7 +145,7 @@ resource "google_compute_backend_service" "consul" {
   }
 
   backend {
-    group           = google_compute_region_instance_group_manager.hashi-group.instance_group
+    group           = google_compute_region_instance_group_manager.hashi_group.instance_group
     balancing_mode  = "UTILIZATION"
     capacity_scaler = 1.0
   }
@@ -205,9 +205,9 @@ resource "google_compute_global_forwarding_rule" "consul" {
 }
 
 # The number of LBs for the apps will be equal to the number of region instance groups (one per admin partition)
-resource "google_compute_forwarding_rule" "clients-lb" {
+resource "google_compute_forwarding_rule" "clients_lb" {
   count = length(google_compute_region_backend_service.apps)
-  name  = "${var.cluster_name}-clients-lb"
+  name  = "${var.cluster_name}-clients_lb"
   #  ip_address = google_compute_address.global-ip.address
   backend_service = google_compute_region_backend_service.apps[count.index].id
   # target    = google_compute_target_pool.vm-pool.self_link

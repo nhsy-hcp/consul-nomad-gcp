@@ -1,3 +1,4 @@
+---
 # Monte Carlo Simulation Configuration File
 
 # Stock tickers to simulate (list of symbols)
@@ -17,11 +18,11 @@ confidence_levels:
 
 # Data fetching settings
 data:
-  period: "1y"                    # Historical data period (1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max)
+  period: "1y"  # Historical data period (1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max)
   cache_duration_days: 1          # Cache validity in days
   use_cache: true                 # Enable data caching
   force_refresh: false            # Force refresh of cached data
-  
+
   # Alpha Vantage API configuration
   alpha_vantage_api_key: ""       # Get free API key from https://www.alphavantage.co/support/#api-key
   api_rate_limit_per_minute: 5    # Alpha Vantage free tier: 5 calls per minute
@@ -32,7 +33,7 @@ output:
   generate_plots: true          # Create visualization plots
   export_csv: true               # Export results to CSV
   plot_sample_paths: 100         # Number of sample paths to show in plots
-  
+
   # File naming
   results_prefix: ""              # Prefix for output files
   timestamp_suffix: false         # Add timestamp to filenames
@@ -52,12 +53,12 @@ visualization:
 # Monte Carlo model parameters (optional overrides)
 model:
   # If specified, these will override calculated values from historical data
-  annual_drift_override: null     # Override annual drift (e.g., 0.08 for 8%)
-  annual_volatility_override: null # Override annual volatility (e.g., 0.25 for 25%)
-  
+  annual_drift_override: null  # Override annual drift (e.g., 0.08 for 8%)
+  annual_volatility_override: null  # Override annual volatility (e.g., 0.25 for 25%)
+
   # Random seed for reproducible results (null = random)
   random_seed: 42
-  
+
   # Model type (currently only supports 'geometric_brownian_motion')
   type: "geometric_brownian_motion"
 
@@ -71,13 +72,13 @@ performance:
 logging:
   level: "INFO"                  # DEBUG, INFO, WARNING, ERROR
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-  
+
 # Advanced risk metrics (optional)
 risk_metrics:
   calculate_var: true            # Value at Risk
   calculate_cvar: true           # Conditional Value at Risk (Expected Shortfall)
-  calculate_maximum_drawdown: false # Maximum drawdown analysis
-  
+  calculate_maximum_drawdown: false  # Maximum drawdown analysis
+
 # Stress testing scenarios (optional)
 stress_tests:
   enabled: false
@@ -94,7 +95,7 @@ notifications:
   enabled: false
   webhook_url: null
   email: null
-  
+
 # Resource limits
 limits:
   max_simulation_days: 1000      # Maximum simulation period

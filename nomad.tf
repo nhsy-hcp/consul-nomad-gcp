@@ -1,6 +1,6 @@
 # resource "null_resource" "nomad_wait_for_service" {
 #   depends_on = [
-#     google_compute_region_instance_group_manager.hashi-group,
+#     google_compute_region_instance_group_manager.hashi_group,
 #     google_compute_region_per_instance_config.with_script
 #   ]
 #   provisioner "local-exec" {

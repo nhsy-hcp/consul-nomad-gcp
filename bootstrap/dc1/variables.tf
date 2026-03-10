@@ -1,12 +1,6 @@
 # Copyright (c) HashiCorp, Inc.
 # SPDX-License-Identifier: MPL-2.0
 
-variable "tfc_gcp_audience" {
-  type        = string
-  default     = ""
-  description = "The audience value to use in run identity tokens if the default audience value is not desired."
-}
-
 variable "tfc_hostname" {
   type        = string
   default     = "app.terraform.io"

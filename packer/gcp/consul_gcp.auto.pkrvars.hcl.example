@@ -14,4 +14,3 @@ gcp_project = "__GCP_PROJECT_ID__"
 
 # SSH configuration
 sshuser = "packer"
-

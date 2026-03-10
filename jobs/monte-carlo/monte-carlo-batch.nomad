@@ -23,7 +23,7 @@ variable "docker_image" {
 job "monte-carlo-batch" {
   datacenters = ["*"]
   type        = "batch"
-  
+
   # Job priority
   priority = 50
 
@@ -53,7 +53,7 @@ job "monte-carlo-batch" {
       config {
         image = var.docker_image
         force_pull = false
-        
+
         args = [
           "--tickers", "${NOMAD_META_TICKER}",
           "--days", "${NOMAD_META_DAYS}",
@@ -70,10 +70,10 @@ job "monte-carlo-batch" {
         PYTHONPATH = "/app/src"
         PYTHONUNBUFFERED = "1"
         MPLBACKEND = "Agg"
-        
+
         # Alpha Vantage API Key
         ALPHA_VANTAGE_API_KEY = "${NOMAD_META_ALPHA_VANTAGE_API_KEY}"
-        
+
         # Add ticker to results prefix for easier identification
         RESULT_PREFIX = "${NOMAD_META_TICKER}_${NOMAD_ALLOC_ID}"
 
@@ -110,7 +110,7 @@ data:
   cache_duration_days: 1
   use_cache: true
   force_refresh: false
-  
+
   # Alpha Vantage API configuration (uses environment variable)
   alpha_vantage_api_key: ""
   api_rate_limit_per_minute: 5
