@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-cd /opt/google/cuda-installer/
+cd /opt/google/cuda-installer/ || exit
 sudo python3 cuda_installer.pyz install_cuda --installation-mode=binary
 
 ## install nvidia drivers and toolkit
@@ -12,7 +12,7 @@ sudo python3 cuda_installer.pyz install_cuda --installation-mode=binary
 #sudo apt install -y cuda-drivers
 #sudo apt install -y cuda-toolkit-12-8
 
-cd /tmp
+cd /tmp || exit
 # install nvidia GPU drivers and toolkit
 curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
   && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \

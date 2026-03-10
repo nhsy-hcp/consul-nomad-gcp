@@ -7,7 +7,8 @@ export CONSUL_URL="https://releases.hashicorp.com/consul"
 export DC_NAME="dc1"
 export CONSUL_DIR="/etc/consul.d"
 export CONSUL_DATA="/opt/consul"
-export LINUX_DISTRO=$(lsb_release -is | tr '[:upper:]' '[:lower:]')
+LINUX_DISTRO=$(lsb_release -is | tr '[:upper:]' '[:lower:]')
+export LINUX_DISTRO
 
 
 if [[ "$OSTYPE" == "linux"* ]];then
@@ -49,18 +50,18 @@ sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
 sudo groupadd docker
-sudo usermod -aG docker $USER
+sudo usermod -aG docker "$USER"
 
 
 newgrp docker
 
 # Downloading Consul binary according to the version specified in the variables
-curl -s -O ${CONSUL_URL}/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_${OS_SUFFIX}.zip
-curl -s -O ${CONSUL_URL}/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_SHA256SUMS
-curl -s -O ${CONSUL_URL}/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_SHA256SUMS.sig
+curl -s -O "${CONSUL_URL}/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_${OS_SUFFIX}.zip"
+curl -s -O "${CONSUL_URL}/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_SHA256SUMS"
+curl -s -O "${CONSUL_URL}/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_SHA256SUMS.sig"
 
 # Installing Consul binary and configuring
-unzip -o consul_${CONSUL_VERSION}_${OS_SUFFIX}.zip
+unzip -o "consul_${CONSUL_VERSION}_${OS_SUFFIX}.zip"
 sudo chown root:root consul
 sudo mv consul /usr/bin/
 consul --version

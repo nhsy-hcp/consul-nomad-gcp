@@ -6,7 +6,8 @@ export NOMAD_URL="https://releases.hashicorp.com/nomad"
 export DC_NAME="dc1"
 export NOMAD_DIR="/etc/nomad.d"
 export NOMAD_DATA="/opt/nomad"
-export LINUX_DISTRO=$(lsb_release -is | tr '[:upper:]' '[:lower:]')
+LINUX_DISTRO=$(lsb_release -is | tr '[:upper:]' '[:lower:]')
+export LINUX_DISTRO
 
 
 if [[ "$OSTYPE" == "linux"* ]];then
@@ -39,15 +40,15 @@ sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
 sudo groupadd docker
-sudo usermod -aG docker $USER
+sudo usermod -aG docker "$USER"
 
 # Downloading Nomad binary according to the version specified in the variables
-curl -s -O ${NOMAD_URL}/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_${OS_SUFFIX}.zip
-curl -s -O ${NOMAD_URL}/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_SHA256SUMS
-curl -s -O ${NOMAD_URL}/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_SHA256SUMS.sig
+curl -s -O "${NOMAD_URL}/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_${OS_SUFFIX}.zip"
+curl -s -O "${NOMAD_URL}/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_SHA256SUMS"
+curl -s -O "${NOMAD_URL}/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_SHA256SUMS.sig"
 
 # Installing Nomad binary and configuring
-unzip -o nomad_${NOMAD_VERSION}_${OS_SUFFIX}.zip
+unzip -o "nomad_${NOMAD_VERSION}_${OS_SUFFIX}.zip"
 sudo chown root:root nomad
 sudo mv nomad /usr/bin/
 nomad --version

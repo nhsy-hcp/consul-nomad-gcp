@@ -39,4 +39,4 @@ repos:
     hooks:
       - id: shellcheck
         args: ['-x']
-        exclude: ^(template|packer)/
+        exclude: ^(template)/
