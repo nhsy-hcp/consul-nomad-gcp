@@ -197,3 +197,22 @@ tasks:
         docker buildx build --platform linux/amd64,linux/arm64 \
         -t ghcr.io/nhsy-hcp/consul-nomad-gcp/monte-carlo:latest \
         --push .
+
+  gcloud-destroy-mig:
+    desc: Destroy managed instance groups via gcloud
+    prompt: This will destroy all managed instance groups. Continue?
+    cmds:
+      - bash scripts/gcloud-destroy-mig.sh
+
+  gcloud-destroy-lb:
+    desc: Destroy load balancers and related resources via gcloud
+    prompt: This will destroy all load balancers and forwarding rules. Continue?
+    cmds:
+      - bash scripts/gcloud-destroy-lb.sh
+
+  gcloud-destroy-all:
+    desc: Destroy all GCP resources (MIGs and LBs) via gcloud
+    prompt: This will destroy ALL managed instance groups and load balancers. Continue?
+    cmds:
+      - task: gcloud-destroy-lb
+      - task: gcloud-destroy-mig

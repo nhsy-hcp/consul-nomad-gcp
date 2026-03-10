@@ -241,6 +241,9 @@ Use `task` to manage the project.
 | `task run-jobs`      | Deploys all example Nomad workloads (Traefik, apps).              |
 | `task purge-jobs`    | Stops and purges all running Nomad jobs.                          |
 | `task setup`         | Sets up Nomad + Consul Workload Identity integration.              |
+| `task gcloud-destroy-mig` | Destroys all managed instance groups via gcloud CLI.         |
+| `task gcloud-destroy-lb`  | Destroys all load balancers and related resources via gcloud. |
+| `task gcloud-destroy-all` | Destroys both MIGs and load balancers via gcloud CLI.        |
 
 ## Project Structure Notes
 
