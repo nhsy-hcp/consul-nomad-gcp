@@ -208,7 +208,7 @@ resource "google_compute_global_forwarding_rule" "consul" {
 # The number of LBs for the client ingress will be equal to the number of region instance groups (one per admin partition)
 resource "google_compute_forwarding_rule" "clients_lb" {
   count = length(google_compute_region_backend_service.client_ingress)
-  name  = "${var.cluster_name}-clients_lb"
+  name  = "${var.cluster_name}-clients-lb-${count.index}"
   #  ip_address = google_compute_address.global-ip.address
   backend_service = google_compute_region_backend_service.client_ingress[count.index].id
   # target    = google_compute_target_pool.vm-pool.self_link
