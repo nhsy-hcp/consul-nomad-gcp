@@ -394,8 +394,10 @@ No modules.
 | <a name="output_NOMAD_ADDR"></a> [NOMAD\_ADDR](#output\_NOMAD\_ADDR) | Nomad HTTPS URL for API access |
 | <a name="output_NOMAD_TOKEN"></a> [NOMAD\_TOKEN](#output\_NOMAD\_TOKEN) | Nomad bootstrap token for authentication |
 | <a name="output_apigw_load_balancers"></a> [apigw\_load\_balancers](#output\_apigw\_load\_balancers) | IP addresses of the API gateway load balancers |
+| <a name="output_cluster_name"></a> [cluster\_name](#output\_cluster\_name) | Cluster name used as a prefix for GCP resources |
 | <a name="output_eval_vars"></a> [eval\_vars](#output\_eval\_vars) | Environment variables for Consul and Nomad CLI access |
 | <a name="output_gcp_project"></a> [gcp\_project](#output\_gcp\_project) | GCP project ID where resources are deployed |
+| <a name="output_gcp_region"></a> [gcp\_region](#output\_gcp\_region) | GCP region where resources are deployed |
 | <a name="output_gcp_wi_csi_google_pd_service_account"></a> [gcp\_wi\_csi\_google\_pd\_service\_account](#output\_gcp\_wi\_csi\_google\_pd\_service\_account) | Email of the GCP service account for CSI Google PD driver |
 | <a name="output_gcp_wi_demo_service_account"></a> [gcp\_wi\_demo\_service\_account](#output\_gcp\_wi\_demo\_service\_account) | Email of the GCP service account for workload identity demo |
 | <a name="output_gcp_wi_monte_carlo_service_account"></a> [gcp\_wi\_monte\_carlo\_service\_account](#output\_gcp\_wi\_monte\_carlo\_service\_account) | Email of the GCP service account for Monte Carlo workloads |

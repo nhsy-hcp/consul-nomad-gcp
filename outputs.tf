@@ -75,6 +75,16 @@ output "gcp_project" {
   value       = var.gcp_project
 }
 
+output "gcp_region" {
+  description = "GCP region where resources are deployed"
+  value       = var.gcp_region
+}
+
+output "cluster_name" {
+  description = "Cluster name used as a prefix for GCP resources"
+  value       = var.cluster_name
+}
+
 output "gcp_wi_provider" {
   description = "GCP Workload Identity provider name for Nomad"
   value       = google_iam_workload_identity_pool_provider.nomad_provider.name
