@@ -99,3 +99,9 @@ output "gcp_wi_csi_google_pd_service_account" {
   description = "Email of the GCP service account for CSI Google PD driver"
   value       = google_service_account.gce_pd_csi.email
 }
+
+
+output "letsencrypt_email" {
+  description = "Email address for Let's Encrypt certificate registration"
+  value       = var.letsencrypt_email
+}

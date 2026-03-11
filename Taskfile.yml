@@ -118,19 +118,68 @@ tasks:
         sh: terraform output ingress_fqdn
 
   setup:
-    desc: Setup the environment for workload identity
+    desc: Setup the environment for workload identity and CSI plugins
     cmds:
       - |
         eval $(terraform output -raw eval_vars)
         nomad setup consul -y
+      - task: setup-csi
 
-  run-jobs:
-    desc: Run Nomad jobs
+  setup-csi:
+    desc: Deploy GCE Persistent Disk CSI plugins
+    silent: true
     cmds:
       - |
         eval $(terraform output -raw eval_vars)
+        export GCP_PROJECT=$(terraform output -raw gcp_project)
+        export GCP_WI_PROVIDER=$(terraform output -raw gcp_wi_provider)
+        export GCP_SERVICE_ACCOUNT=$(terraform output -raw gcp_wi_csi_google_pd_service_account)
+
+        echo "Deploying GCE PD CSI controller plugin..."
+        nomad job run \
+          -var gcp_project=$GCP_PROJECT \
+          -var gcp_wi_provider=$GCP_WI_PROVIDER \
+          -var gcp_service_account=$GCP_SERVICE_ACCOUNT \
+          jobs/gce-pd-csi-controller.nomad
+
+        echo "Deploying GCE PD CSI node plugin..."
+        nomad job run jobs/gce-pd-csi-node.nomad
+
+        echo "Waiting for CSI plugins to be ready..."
+        sleep 15
+
+        echo "CSI Plugin Status:"
+        nomad plugin status gce-pd || echo "Warning: Plugin not yet fully registered"
+
+  run-jobs:
+    desc: Run Nomad jobs (requires CSI plugins - run 'task setup' first)
+    silent: true
+    vars:
+      DOMAIN:
+        sh: terraform output -raw ingress_fqdn | sed 's/^ingress\.//'
+      CONSUL_TOKEN:
+        sh: terraform output -raw CONSUL_TOKEN
+      EMAIL:
+        sh: terraform output -raw letsencrypt_email
+    cmds:
+      - |
+        eval $(terraform output -raw eval_vars)
+
+        # Verify CSI plugin is available
+        if ! nomad plugin status gce-pd &>/dev/null; then
+          echo "ERROR: CSI plugin 'gce-pd' not found."
+          echo "Please run 'task setup' or 'task setup-csi' first to deploy CSI plugins."
+          exit 1
+        fi
+
+        echo "Using domain: {{ .DOMAIN }}"
+
         nomad volume create jobs/traefik-csi-volume.hcl
-        nomad job run -var-file=jobs/traefik.hcl jobs/traefik.nomad
+        nomad job run \
+          -var domain={{ .DOMAIN }} \
+          -var email={{ .EMAIL }} \
+          -var consul_token={{ .CONSUL_TOKEN }} \
+          jobs/traefik.nomad
         nomad job run jobs/echoserver.nomad
         nomad job run jobs/helloworld.nomad
       - task: ui-jobs

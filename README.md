@@ -401,6 +401,7 @@ No modules.
 | <a name="output_ingress_dashboard_url"></a> [ingress\_dashboard\_url](#output\_ingress\_dashboard\_url) | URL for accessing the Traefik dashboard |
 | <a name="output_ingress_fqdn"></a> [ingress\_fqdn](#output\_ingress\_fqdn) | Fully qualified domain name for the ingress endpoint |
 | <a name="output_ingress_url"></a> [ingress\_url](#output\_ingress\_url) | Base HTTPS URL for the ingress endpoint |
+| <a name="output_letsencrypt_email"></a> [letsencrypt\_email](#output\_letsencrypt\_email) | Email address for Let's Encrypt certificate registration |
 | <a name="output_monte_carlo_bucket"></a> [monte\_carlo\_bucket](#output\_monte\_carlo\_bucket) | Name of the GCS bucket for Monte Carlo simulation results |
 | <a name="output_partitions"></a> [partitions](#output\_partitions) | List of Consul admin partitions assigned to Nomad clients |
 <!-- END_TF_DOCS -->
