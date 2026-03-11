@@ -1,0 +1,10 @@
+{"id":"ace04c1f-43ba-4940-bb30-87422834ff83","ts":"2026-03-11T11:30:01.438Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/Taskfile.yml","version":"1.0.0","taskID":"a2a1dadc-b4ab-49d2-b3cb-9cd090c98e38"}
+{"id":"1d5477d1-be39-4e47-aabe-57502c3a7bdb","ts":"2026-03-11T11:31:51.068Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/Taskfile.yml","version":"1.0.0","taskID":"a2a1dadc-b4ab-49d2-b3cb-9cd090c98e38"}
+{"id":"5f627a52-e04c-4926-9783-e6227c54b25a","ts":"2026-03-11T11:34:01.675Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/Taskfile.yml","version":"1.0.0","taskID":"a2a1dadc-b4ab-49d2-b3cb-9cd090c98e38"}
+{"id":"07642b4c-a0b8-48df-9f68-4f58f1fd5a7a","ts":"2026-03-11T11:35:20.176Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/Taskfile.yml","version":"1.0.0","taskID":"a2a1dadc-b4ab-49d2-b3cb-9cd090c98e38"}
+{"id":"58e6f9a5-7b39-4329-8a7c-29f218ca2e7e","ts":"2026-03-11T12:02:58.438Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/jobs/traefik.hcl","version":"1.0.0","taskID":"f87b5149-6c05-414e-90a2-01cbed8b144b"}
+{"id":"4cd95db6-a1e8-4d8d-8a8b-ffe8b4920ffc","ts":"2026-03-11T12:03:14.094Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/Taskfile.yml","version":"1.0.0","taskID":"f87b5149-6c05-414e-90a2-01cbed8b144b"}
+{"id":"2258b7fb-8123-4b6c-8b7e-ff489c997161","ts":"2026-03-11T12:05:52.174Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/Taskfile.yml","version":"1.0.0","taskID":"f87b5149-6c05-414e-90a2-01cbed8b144b"}
+{"id":"365d3845-afe1-4eb2-a3a6-7ab51cc704e7","ts":"2026-03-11T12:24:20.187Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/Taskfile.yml","version":"1.0.0","taskID":"f87b5149-6c05-414e-90a2-01cbed8b144b"}
+{"id":"e899c30d-a571-4be4-9b2d-3532a0abd3ed","ts":"2026-03-11T12:25:10.941Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/outputs.tf","version":"1.0.0","taskID":"f87b5149-6c05-414e-90a2-01cbed8b144b"}
+{"id":"5cf12e21-f0d6-4bb7-bb78-75e1a9375809","ts":"2026-03-11T12:25:31.956Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/Taskfile.yml","version":"1.0.0","taskID":"f87b5149-6c05-414e-90a2-01cbed8b144b"}
