@@ -198,14 +198,14 @@ terraform output
     Open the Nomad and Consul web interfaces in your browser.
 
     ```bash
-    task ui
+task nomad:ui
     ```
 
 6.  **Setup:**
     Enable Nomad + Consul Workload Identity integration.
 
     ```bash
-    task setup
+task nomad:setup
     ```
 
 ## Configuration Reference
@@ -223,7 +223,7 @@ terraform output
 - `dns_zone`: Existing GCP DNS zone name
 
 ### Environment Variables (Set Automatically)
-After deployment, the following environment variables are available via `eval $(task tf-output-dc1)`:
+After deployment, the following environment variables are available via `eval $(task tf:output:dc1)`:
 - `CONSUL_HTTP_ADDR`: Consul API endpoint
 - `CONSUL_HTTP_TOKEN`: Consul authentication token
 - `NOMAD_ADDR`: Nomad API endpoint
@@ -237,17 +237,19 @@ Use `task` to manage the project.
 | :------------------- | :----------------------------------------------------------------- |
 | `task packer`        | Builds only the Packer image.                                     |
 | `task clean`         | Deletes the GCP images created by Packer.                         |
-| `task ui`            | Opens the Consul and Nomad UIs in your browser.                   |
-| `task run-jobs`      | Deploys all example Nomad workloads (Traefik, apps).              |
-| `task purge-jobs`    | Stops and purges all running Nomad jobs.                          |
-| `task setup`         | Sets up Nomad + Consul Workload Identity integration.              |
-| `task gcloud-destroy-mig` | Destroys all managed instance groups via gcloud CLI.         |
-| `task gcloud-destroy-lb`  | Destroys all load balancers and related resources via gcloud. |
-| `task gcloud-destroy-all` | Destroys both MIGs and load balancers via gcloud CLI.        |
-| `task check-server-logs`  | Check server logs via gcloud SSH and IAP tunnel.             |
-| `task consul-status`      | Check Consul cluster status (members, raft, services).       |
-| `task nomad-status`       | Check Nomad cluster status (servers, nodes, jobs).           |
-| `task status`             | Check both Consul and Nomad cluster status.                  |
+| `task nomad:ui`            | Opens the Consul and Nomad UIs in your browser.                   |
+| `task job:run`             | Deploys all example Nomad workloads (Traefik, apps).              |
+| `task job:purge`           | Stops and purges all running Nomad jobs.                          |
+| `task nomad:setup`         | Sets up Nomad + Consul Workload Identity integration.             |
+| `task gcp:destroy:mig`     | Destroys all managed instance groups via gcloud CLI.              |
+| `task gcp:destroy:lb`      | Destroys all load balancers and related resources via gcloud.     |
+| `task gcp:destroy:all`     | Destroys both MIGs and load balancers via gcloud CLI.             |
+| `task check-server-logs`   | Check server logs via gcloud SSH and IAP tunnel.                  |
+| `task consul:status`       | Check Consul cluster status (members, raft, services).            |
+| `task nomad:status`        | Check Nomad cluster status (servers, nodes, jobs).                |
+| `task status`              | Check both Consul and Nomad cluster status.                       |
+
+**Note:** Old task names (e.g., `task ui`, `task run-jobs`) are still available as aliases for backward compatibility.
 
 ## Project Structure Notes
 

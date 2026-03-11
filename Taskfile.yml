@@ -3,6 +3,9 @@
 version: '3'
 
 tasks:
+  # ============================================================================
+  # Standard Interface (AGENTS.md compliance)
+  # ============================================================================
 
   init:
     desc: Perform one-time environment setup
@@ -10,75 +13,108 @@ tasks:
       - pre-commit install
       - terraform init
 
+  deps:
+    desc: Check for required dependencies and validate environment
+    silent: true
+    cmds:
+      - command -v terraform >/dev/null 2>&1 || { echo "terraform not found"; exit 1; }
+      - command -v packer >/dev/null 2>&1 || { echo "packer not found"; exit 1; }
+      - command -v gcloud >/dev/null 2>&1 || { echo "gcloud not found"; exit 1; }
+      - command -v nomad >/dev/null 2>&1 || { echo "nomad not found"; exit 1; }
+      - command -v consul >/dev/null 2>&1 || { echo "consul not found"; exit 1; }
+      - echo "✓ All required dependencies are available"
+
   lint:
     desc: Run all code quality, formatting, and security checks
     cmds:
       - 'yamllint -d "{extends: default, rules: {line-length: disable}}" .'
       - pre-commit run --all-files
 
-  tf-init:
-    desc: Initialize Terraform
+  test:
+    desc: Execute local unit and integration test suite
+    dir: jobs/monte-carlo
     cmds:
-      - terraform init
+      - python -m pytest tests/ -v
 
-  tf-validate:
-    aliases: ["validate"]
-    desc: Validate Terraform configuration
+  test:all:
+    desc: Run complete test suite across all modules
     cmds:
-      - terraform validate
+      - task: test
+      - task: tf:validate
 
-  tf-fmt:
-    aliases: ["fmt"]
-    desc: Format Terraform files
+  test:ci:
+    desc: Execute full verification pipeline as defined in CI
     cmds:
-      - terraform fmt -recursive
+      - task: lint
+      - task: test:all
 
-  tf-plan:
-    aliases: ["plan"]
-    desc: Run Terraform plan
+  build:
+    desc: Build all artifacts (Packer images)
     cmds:
-      - terraform plan
-
-  tf-destroy:
-    aliases: ["destroy"]
-    desc: Destroy Terraform infrastructure
-    cmds:
-      - terraform destroy --auto-approve
+      - task: packer:build
 
   clean:
+    desc: Remove build artifacts, temporary files, and cache
     cmds:
       - |
+        echo "Cleaning GCP images..."
         echo GCP Project ID: {{ .GCP_PROJECT }}
-        for image in $(gcloud compute images list --project {{ .GCP_PROJECT }} --no-standard-images --format="value(NAME)"); do gcloud compute images delete --project {{ .GCP_PROJECT }} -q $image;done
+        for image in $(gcloud compute images list --project {{ .GCP_PROJECT }} --no-standard-images --format="value(NAME)"); do
+          gcloud compute images delete --project {{ .GCP_PROJECT }} -q $image
+        done
+      - echo "Cleaning temporary files..."
+      - rm -rf .tmp/ || true
+      - rm -rf .pytest_cache/ || true
+      - rm -rf jobs/monte-carlo/.pytest_cache/ || true
+      - rm -rf jobs/monte-carlo/__pycache__/ || true
     ignore_error: true
     vars:
       GCP_PROJECT:
         sh: gcloud config get-value project
 
-  packer:
-    desc: Build Packer images
-    cmds:
-      - task: packer-base
-      - task: packer-client
+  # ============================================================================
+  # Terraform Namespace
+  # ============================================================================
 
-  packer-base:
-    desc: Build base image
-    dir: packer/gcp
+  tf:init:
+    aliases: ["tf-init"]
+    desc: Initialize Terraform
     cmds:
-      - packer init .
-      - time packer build -only=googlecompute.consul_nomad .
-      - echo "All packer builds are complete."
+      - terraform init
 
-  packer-client:
-    desc: Build client images
-    dir: packer/gcp
+  tf:validate:
+    aliases: ["validate", "tf-validate"]
+    desc: Validate Terraform configuration
     cmds:
-      - packer init .
-      - time packer build -force -only=googlecompute.consul_nomad_client_gpu .
-      - echo "All packer builds are complete."
+      - terraform validate
 
-  tf-output-dc1:
-    aliases: ["tfo1"]
+  tf:fmt:
+    aliases: ["fmt", "tf-fmt"]
+    desc: Format Terraform files
+    cmds:
+      - terraform fmt -recursive
+
+  tf:plan:
+    aliases: ["plan", "tf-plan"]
+    desc: Run Terraform plan
+    cmds:
+      - terraform plan
+
+  tf:apply:
+    aliases: ["apply"]
+    desc: Apply Terraform changes
+    cmds:
+      - terraform apply
+
+  tf:destroy:
+    aliases: ["destroy", "tf-destroy"]
+    desc: Destroy Terraform infrastructure
+    cmds:
+      - terraform destroy --auto-approve
+
+  tf:output:dc1:
+    aliases: ["tfo1", "tf-output-dc1"]
+    desc: Get dc1 environment variables and outputs
     silent: true
     cmds:
       - rm terraform.tfstate || true
@@ -88,8 +124,9 @@ tasks:
       - terraform output
       - terraform output -raw eval_vars
 
-  tf-output-dc2:
-    aliases: ["tfo2"]
+  tf:output:dc2:
+    aliases: ["tfo2", "tf-output-dc2"]
+    desc: Get dc2 environment variables and outputs
     cmds:
       - rm terraform.tfstate || true
       - rm backend.tf || true
@@ -98,34 +135,77 @@ tasks:
       - terraform output
       - terraform output -raw eval_vars
 
-  ui:
-    desc: Start the Consul and Nomad UI
+  # ============================================================================
+  # Packer Namespace
+  # ============================================================================
+
+  packer:build:
+    aliases: ["packer"]
+    desc: Build all Packer images
+    cmds:
+      - task: packer:base
+      - task: packer:client
+
+  packer:base:
+    aliases: ["packer-base"]
+    desc: Build base server image
+    dir: packer/gcp
+    cmds:
+      - packer init .
+      - time packer build -only=googlecompute.consul_nomad .
+      - echo "Base image build complete."
+
+  packer:client:
+    aliases: ["packer-client"]
+    desc: Build GPU-enabled client image
+    dir: packer/gcp
+    cmds:
+      - packer init .
+      - time packer build -force -only=googlecompute.consul_nomad_client_gpu .
+      - echo "Client image build complete."
+
+  # ============================================================================
+  # Consul Namespace
+  # ============================================================================
+
+  consul:status:
+    aliases: ["consul-status"]
+    desc: Check Consul cluster status
+    silent: true
+    cmds:
+      - |
+        eval $(terraform output -raw eval_vars)
+        echo "=== Consul Members ==="
+        consul members
+        echo ""
+        echo "=== Consul Operator Raft List-Peers ==="
+        consul operator raft list-peers
+        echo ""
+        echo "=== Consul Catalog Services ==="
+        consul catalog services
+
+  consul:ui:
+    desc: Open Consul UI in browser
     cmds:
       - |
         eval $(terraform output -raw eval_vars)
         open $CONSUL_HTTP_ADDR
-        nomad ui -authenticate -tls-skip-verify
-        echo $NOMAD_TOKEN | pbcopy
-        echo "Nomad token copied to clipboard."
-        echo "Consul token: $CONSUL_HTTP_TOKEN"
 
-  echoserver:
-    desc: Open the echoserver in the browser
-    cmds:
-      - open https://echoserver.{{ .ingress_fqdn }}
-    vars:
-      ingress_fqdn:
-        sh: terraform output ingress_fqdn
+  # ============================================================================
+  # Nomad Namespace
+  # ============================================================================
 
-  setup:
-    desc: Setup the environment for workload identity and CSI plugins
+  nomad:setup:
+    aliases: ["setup"]
+    desc: Setup Nomad environment for workload identity and CSI plugins
     cmds:
       - |
         eval $(terraform output -raw eval_vars)
         nomad setup consul -y
-      - task: setup-csi
+      - task: nomad:setup:csi
 
-  setup-csi:
+  nomad:setup:csi:
+    aliases: ["setup-csi"]
     desc: Deploy GCE Persistent Disk CSI plugins
     silent: true
     cmds:
@@ -151,8 +231,41 @@ tasks:
         echo "CSI Plugin Status:"
         nomad plugin status gce-pd || echo "Warning: Plugin not yet fully registered"
 
-  run-jobs:
-    desc: Run Nomad jobs (requires CSI plugins - run 'task setup' first)
+  nomad:status:
+    aliases: ["nomad-status"]
+    desc: Check Nomad cluster status
+    silent: true
+    cmds:
+      - |
+        eval $(terraform output -raw eval_vars)
+        echo "=== Nomad Server Members ==="
+        nomad server members
+        echo ""
+        echo "=== Nomad Node Status ==="
+        nomad node status
+        echo ""
+        echo "=== Nomad Job Status ==="
+        nomad job status
+
+  nomad:ui:
+    aliases: ["ui"]
+    desc: Open Consul and Nomad UIs in browser
+    cmds:
+      - |
+        eval $(terraform output -raw eval_vars)
+        open $CONSUL_HTTP_ADDR
+        nomad ui -authenticate -tls-skip-verify
+        echo $NOMAD_TOKEN | pbcopy
+        echo "Nomad token copied to clipboard."
+        echo "Consul token: $CONSUL_HTTP_TOKEN"
+
+  # ============================================================================
+  # Job Namespace
+  # ============================================================================
+
+  job:run:
+    aliases: ["run-jobs"]
+    desc: Deploy all example Nomad workloads (requires CSI plugins)
     silent: true
     vars:
       DOMAIN:
@@ -168,7 +281,7 @@ tasks:
         # Verify CSI plugin is available
         if ! nomad plugin status gce-pd &>/dev/null; then
           echo "ERROR: CSI plugin 'gce-pd' not found."
-          echo "Please run 'task setup' or 'task setup-csi' first to deploy CSI plugins."
+          echo "Please run 'task nomad:setup' or 'task nomad:setup:csi' first."
           exit 1
         fi
 
@@ -182,10 +295,19 @@ tasks:
           jobs/traefik.nomad
         nomad job run jobs/echoserver.nomad
         nomad job run jobs/helloworld.nomad
-      - task: ui-jobs
+      - task: job:ui
 
-  ui-jobs:
-    desc: UI Nomad jobs
+  job:purge:
+    aliases: ["purge-jobs"]
+    desc: Stop and purge all running Nomad jobs
+    cmds:
+      - |
+        eval $(terraform output -raw eval_vars)
+        nomad job status -json -short | jq -r '.[].ID' | xargs -n1 nomad job stop -purge
+
+  job:ui:
+    aliases: ["ui-jobs"]
+    desc: Display URLs for deployed job UIs
     silent: true
     cmds:
       - echo https://{{ .FQDN }}:8443/dashboard/
@@ -195,51 +317,98 @@ tasks:
       FQDN:
         sh: terraform output ingress_fqdn
 
-  purge-jobs:
-    desc: Purge Nomad jobs
-    cmds:
-      - |
-        eval $(terraform output -raw eval_vars)
-        nomad job status -json -short | jq -r '.[].ID' | xargs -n1 echo nomad job stop
-
-  bootstrap-dc1:
-    desc: Bootstrap the dc1 HCP Terraform workspace
-    dir: bootstrap/dc1
-    cmds:
-      - terraform init
-      - terraform validate
-      - terraform apply
-
-  google-cert:
-    desc: Google-managed SSL certificate status
-    cmds:
-      - gcloud compute ssl-certificates describe dc1-hcp-global-cert
-
-  job-wi:
-    desc: Run the workload identity job
+  job:wi:
+    aliases: ["job-wi"]
+    desc: Run the GCP workload identity demo job
+    vars:
+      GCP_PROJECT:
+        sh: terraform output -raw gcp_project
+      GCP_WI_PROVIDER:
+        sh: terraform output -raw gcp_wi_provider
+      GCP_SERVICE_ACCOUNT:
+        sh: terraform output -raw gcp_wi_demo_service_account
     cmds:
       - |
         eval $(terraform output -raw eval_vars)
         nomad job stop -purge gcp-wi-demo || true
-        nomad job run -var gcp_project=$GCP_PROJECT -var gcp_wi_provider=$GCP_WI_PROVIDER -var gcp_service_account=$GCP_WI_SERVICE_ACCOUNT jobs/gcp-wi-demo.nomad
+        nomad job run \
+          -var gcp_project={{ .GCP_PROJECT }} \
+          -var gcp_wi_provider={{ .GCP_WI_PROVIDER }} \
+          -var gcp_service_account={{ .GCP_SERVICE_ACCOUNT }} \
+          jobs/gcp-wi-demo.nomad
 
-  job-wi-status:
-    desc: Check the status of the workload identity job
+  job:wi:status:
+    aliases: ["job-wi-status"]
+    desc: Check status of the workload identity demo job
     cmds:
       - |
+        eval $(terraform output -raw eval_vars)
         nomad job status gcp-wi-demo
         nomad alloc status -json -short | jq -r '.[] | select(.JobID == "gcp-wi-demo") | .ID' | xargs -n1 nomad alloc status
 
-  job-wi-exec:
-    desc: Check the status of the workload identity job
-    cmds:
-      - nomad alloc exec -i -t {{ .ID }} bash
+  job:wi:exec:
+    aliases: ["job-wi-exec"]
+    desc: Execute shell in workload identity demo job allocation
     vars:
       ID:
-        sh: nomad job allocs -json gcp-wi-demo | jq -r '.[-1].ID'
+        sh: eval $(terraform output -raw eval_vars) && nomad job allocs -json gcp-wi-demo | jq -r '.[-1].ID'
+    cmds:
+      - eval $(terraform output -raw eval_vars) && nomad alloc exec -i -t {{ .ID }} bash
 
-  docker-build:
-    desc: Build the Docker image for the workload identity job
+  job:echoserver:
+    aliases: ["echoserver"]
+    desc: Open echoserver in browser
+    cmds:
+      - open https://echoserver.{{ .ingress_fqdn }}
+    vars:
+      ingress_fqdn:
+        sh: terraform output ingress_fqdn
+
+  # ============================================================================
+  # GCP Namespace
+  # ============================================================================
+
+  gcp:destroy:mig:
+    aliases: ["gcloud-destroy-mig"]
+    desc: Destroy managed instance groups via gcloud
+    prompt: This will destroy all managed instance groups. Continue?
+    cmds:
+      - bash scripts/gcloud-destroy-mig.sh
+
+  gcp:destroy:lb:
+    aliases: ["gcloud-destroy-lb"]
+    desc: Destroy load balancers and related resources via gcloud
+    prompt: This will destroy all load balancers and forwarding rules. Continue?
+    cmds:
+      - bash scripts/gcloud-destroy-lb.sh
+
+  gcp:destroy:all:
+    aliases: ["gcloud-destroy-all"]
+    desc: Destroy all GCP resources (MIGs and LBs) via gcloud
+    prompt: This will destroy ALL managed instance groups and load balancers. Continue?
+    cmds:
+      - task: gcp:destroy:lb
+      - task: gcp:destroy:mig
+
+  gcp:cert:status:
+    aliases: ["google-cert"]
+    desc: Check Google-managed SSL certificate status
+    cmds:
+      - gcloud compute ssl-certificates describe dc1-hcp-global-cert
+
+  gcp:logs:
+    aliases: ["check-server-logs"]
+    desc: Check server logs via gcloud SSH and IAP
+    cmds:
+      - bash scripts/check-server-logs.sh {{.CLI_ARGS}}
+
+  # ============================================================================
+  # Docker Namespace
+  # ============================================================================
+
+  docker:build:
+    aliases: ["docker-build"]
+    desc: Build and push multi-arch Docker image for Monte Carlo job
     dir: jobs/monte-carlo
     cmds:
       - |
@@ -247,62 +416,25 @@ tasks:
         -t ghcr.io/nhsy-hcp/consul-nomad-gcp/monte-carlo:latest \
         --push .
 
-  gcloud-destroy-mig:
-    desc: Destroy managed instance groups via gcloud
-    prompt: This will destroy all managed instance groups. Continue?
-    cmds:
-      - bash scripts/gcloud-destroy-mig.sh
+  # ============================================================================
+  # Bootstrap Namespace
+  # ============================================================================
 
-  gcloud-destroy-lb:
-    desc: Destroy load balancers and related resources via gcloud
-    prompt: This will destroy all load balancers and forwarding rules. Continue?
+  bootstrap:dc1:
+    aliases: ["bootstrap-dc1"]
+    desc: Bootstrap the dc1 HCP Terraform workspace
+    dir: bootstrap/dc1
     cmds:
-      - bash scripts/gcloud-destroy-lb.sh
+      - terraform init
+      - terraform validate
+      - terraform apply
 
-  gcloud-destroy-all:
-    desc: Destroy all GCP resources (MIGs and LBs) via gcloud
-    prompt: This will destroy ALL managed instance groups and load balancers. Continue?
-    cmds:
-      - task: gcloud-destroy-lb
-      - task: gcloud-destroy-mig
-
-  check-server-logs:
-    desc: Check server logs via gcloud SSH and IAP
-    cmds:
-      - bash scripts/check-server-logs.sh {{.CLI_ARGS}}
-
-  consul-status:
-    desc: Check Consul cluster status
-    silent: true
-    cmds:
-      - |
-        eval $(terraform output -raw eval_vars)
-        echo "=== Consul Members ==="
-        consul members
-        echo ""
-        echo "=== Consul Operator Raft List-Peers ==="
-        consul operator raft list-peers
-        echo ""
-        echo "=== Consul Catalog Services ==="
-        consul catalog services
-
-  nomad-status:
-    desc: Check Nomad cluster status
-    silent: true
-    cmds:
-      - |
-        eval $(terraform output -raw eval_vars)
-        echo "=== Nomad Server Members ==="
-        nomad server members
-        echo ""
-        echo "=== Nomad Node Status ==="
-        nomad node status
-        echo ""
-        echo "=== Nomad Job Status ==="
-        nomad job status
+  # ============================================================================
+  # Status Namespace
+  # ============================================================================
 
   status:
     desc: Check both Consul and Nomad cluster status
     cmds:
-      - task: consul-status
-      - task: nomad-status
+      - task: consul:status
+      - task: nomad:status
