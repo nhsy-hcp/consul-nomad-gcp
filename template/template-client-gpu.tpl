@@ -204,7 +204,7 @@ sudo tar -C /opt/cni/bin -xzf cni-plugins.tgz
 
 # Installing Consul CNI
 export ARCH_CNI="$( [ $(uname -m) = aarch64 ] && echo arm64 || echo amd64)"
-curl -L -o consul-cni.zip "https://releases.hashicorp.com/consul-cni/$$CONSUL_CNI_VERSION/consul-cni_$${CONSUL_CNI_VERSION}_linux_$$ARCH_CNI".zip
+curl -L -o consul-cni.zip "https://releases.hashicorp.com/consul-cni/$${CONSUL_CNI_VERSION}/consul-cni_$${CONSUL_CNI_VERSION}_linux_$${ARCH_CNI}".zip
 sudo unzip consul-cni.zip -d /opt/cni/bin -x LICENSE.txt
 
 sudo mkdir -p /opt/nomad/plugins

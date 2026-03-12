@@ -152,7 +152,7 @@ tasks:
     dir: packer/gcp
     cmds:
       - packer init .
-      - time packer build -only=googlecompute.consul_nomad .
+      - time packer build {{.CLI_ARGS}} -only=googlecompute.consul_nomad .
       - echo "Base image build complete."
 
   packer:client:
@@ -169,7 +169,7 @@ tasks:
   # ============================================================================
 
   consul:status:
-    aliases: ["consul-status"]
+    aliases: ["consul-status", "status:consul"]
     desc: Check Consul cluster status
     silent: true
     cmds:
@@ -232,7 +232,7 @@ tasks:
         nomad plugin status gce-pd || echo "Warning: Plugin not yet fully registered"
 
   nomad:status:
-    aliases: ["nomad-status"]
+    aliases: ["nomad-status", "status:nomad"]
     desc: Check Nomad cluster status
     silent: true
     cmds:
@@ -263,15 +263,16 @@ tasks:
   # Job Namespace
   # ============================================================================
 
-  job:run:
-    aliases: ["run-jobs"]
-    desc: Deploy all example Nomad workloads (requires CSI plugins)
+  job:traefik:
+    desc: Deploy Traefik ingress controller with Consul Connect
     silent: true
     vars:
-      DOMAIN:
-        sh: terraform output -raw ingress_fqdn | sed 's/^ingress\.//'
+      CONSUL_FQDN:
+        sh: terraform output -raw consul_fqdn
       CONSUL_TOKEN:
         sh: terraform output -raw CONSUL_TOKEN
+      DOMAIN:
+        sh: terraform output -raw ingress_fqdn
       EMAIL:
         sh: terraform output -raw letsencrypt_email
     cmds:
@@ -285,20 +286,27 @@ tasks:
           exit 1
         fi
 
-        echo "Using domain: {{ .DOMAIN }}"
-
-        nomad volume create jobs/traefik-csi-volume.hcl
+        echo "Deploying Traefik with domain: {{ .DOMAIN }}"
+        nomad volume create jobs/traefik-csi-volume.hcl || echo "Volume already exists"
         nomad job run \
+          -var consul_fqdn={{ .CONSUL_FQDN }} \
           -var domain={{ .DOMAIN }} \
           -var email={{ .EMAIL }} \
           -var consul_token={{ .CONSUL_TOKEN }} \
-          jobs/traefik.nomad
+          jobs/traefik-connect.nomad
+
+  job:demo:
+    desc: Deploy all example Nomad workloads (requires CSI plugins)
+    silent: true
+    cmds:
+      - |
+        eval $(terraform output -raw eval_vars)
+        echo "Deploying example applications..."
         nomad job run jobs/echoserver.nomad
         nomad job run jobs/helloworld.nomad
       - task: job:ui
 
   job:purge:
-    aliases: ["purge-jobs"]
     desc: Stop and purge all running Nomad jobs
     cmds:
       - |
@@ -306,7 +314,6 @@ tasks:
         nomad job status -json -short | jq -r '.[].ID' | xargs -n1 nomad job stop -purge
 
   job:ui:
-    aliases: ["ui-jobs"]
     desc: Display URLs for deployed job UIs
     silent: true
     cmds:
@@ -318,7 +325,6 @@ tasks:
         sh: terraform output ingress_fqdn
 
   job:wi:
-    aliases: ["job-wi"]
     desc: Run the GCP workload identity demo job
     vars:
       GCP_PROJECT:
@@ -338,7 +344,6 @@ tasks:
           jobs/gcp-wi-demo.nomad
 
   job:wi:status:
-    aliases: ["job-wi-status"]
     desc: Check status of the workload identity demo job
     cmds:
       - |
@@ -347,7 +352,6 @@ tasks:
         nomad alloc status -json -short | jq -r '.[] | select(.JobID == "gcp-wi-demo") | .ID' | xargs -n1 nomad alloc status
 
   job:wi:exec:
-    aliases: ["job-wi-exec"]
     desc: Execute shell in workload identity demo job allocation
     vars:
       ID:
@@ -356,7 +360,6 @@ tasks:
       - eval $(terraform output -raw eval_vars) && nomad alloc exec -i -t {{ .ID }} bash
 
   job:echoserver:
-    aliases: ["echoserver"]
     desc: Open echoserver in browser
     cmds:
       - open https://echoserver.{{ .ingress_fqdn }}
@@ -367,6 +370,61 @@ tasks:
   # ============================================================================
   # GCP Namespace
   # ============================================================================
+
+  gcp:rolling-update:servers:
+    desc: Trigger a rolling replacement of all server MIG instances
+    silent: true
+    prompt: This will replace all server instances with the current instance template. Continue?
+    vars:
+      GCP_PROJECT:
+        sh: terraform output -raw gcp_project
+      GCP_REGION:
+        sh: terraform output -raw gcp_region
+      CLUSTER_NAME:
+        sh: terraform output -raw cluster_name
+    cmds:
+      - |
+        MIG="{{.CLUSTER_NAME}}-server-mig"
+        echo "Rolling update: ${MIG}"
+        NUM_ZONES=$(gcloud compute instance-groups managed describe "${MIG}" \
+          --project={{.GCP_PROJECT}} \
+          --region={{.GCP_REGION}} \
+          --format="value(distributionPolicy.zones)" | tr ';' '\n' | wc -l | tr -d ' ')
+        gcloud compute instance-groups managed rolling-action replace "${MIG}" \
+          --project={{.GCP_PROJECT}} \
+          --region={{.GCP_REGION}} \
+          --max-surge=0 \
+          --max-unavailable="${NUM_ZONES}"
+
+  gcp:rolling-update:clients:
+    aliases: ["rolling-update"]
+    desc: Trigger a rolling replacement of all client MIG instances
+    silent: true
+    prompt: This will replace all client instances with the current instance template. Continue?
+    vars:
+      GCP_PROJECT:
+        sh: terraform output -raw gcp_project
+      GCP_REGION:
+        sh: terraform output -raw gcp_region
+      CLUSTER_NAME:
+        sh: terraform output -raw cluster_name
+    cmds:
+      - |
+        for mig in $(gcloud compute instance-groups managed list \
+          --project={{.GCP_PROJECT}} \
+          --filter="name~{{.CLUSTER_NAME}}-clients-mig" \
+          --format="value(name)"); do
+          echo "Rolling update: ${mig}"
+          NUM_ZONES=$(gcloud compute instance-groups managed describe "${mig}" \
+            --project={{.GCP_PROJECT}} \
+            --region={{.GCP_REGION}} \
+            --format="value(distributionPolicy.zones)" | tr ';' '\n' | wc -l | tr -d ' ')
+          gcloud compute instance-groups managed rolling-action replace "${mig}" \
+            --project={{.GCP_PROJECT}} \
+            --region={{.GCP_REGION}} \
+            --max-surge=0 \
+            --max-unavailable="${NUM_ZONES}"
+        done
 
   gcp:destroy:mig:
     aliases: ["gcloud-destroy-mig"]
@@ -401,6 +459,40 @@ tasks:
     desc: Check server logs via gcloud SSH and IAP
     cmds:
       - bash scripts/check-server-logs.sh {{.CLI_ARGS}}
+
+  gcp:instances:
+    aliases: ["instances"]
+    desc: List all GCP compute instance names in the project
+    silent: true
+    vars:
+      GCP_PROJECT:
+        sh: terraform output -raw gcp_project
+    cmds:
+      - gcloud compute instances list --project={{.GCP_PROJECT}} --format="table(name,zone,status,machineType.scope())"
+
+  gcp:connect:
+    aliases: ["connect"]
+    desc: SSH onto a GCP instance via IAP (e.g. task connect -- <instance-name>)
+    silent: true
+    vars:
+      GCP_PROJECT:
+        sh: terraform output -raw gcp_project
+    cmds:
+      - |
+        INSTANCE="{{.CLI_ARGS}}"
+        ZONE=$(gcloud compute instances list \
+          --project={{.GCP_PROJECT}} \
+          --filter="name=${INSTANCE}" \
+          --format="value(zone)" \
+          --limit=1)
+        if [ -z "$ZONE" ]; then
+          echo "ERROR: instance '${INSTANCE}' not found in project {{.GCP_PROJECT}}"
+          exit 1
+        fi
+        gcloud compute ssh "${INSTANCE}" \
+          --project={{.GCP_PROJECT}} \
+          --zone="${ZONE}" \
+          --tunnel-through-iap
 
   # ============================================================================
   # Docker Namespace
