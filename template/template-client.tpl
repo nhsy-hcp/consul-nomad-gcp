@@ -92,8 +92,6 @@ tls {
    }
 }
 
-
-
 acl = {
   enabled = true
   default_policy = "deny"
@@ -125,13 +123,11 @@ reporting {
   }
 }
 
-
 partition ="${partition}"
 
 client_addr = "0.0.0.0"
 bind_addr = "$PRIVATE_IP"
 recursors = ["8.8.8.8","1.1.1.1"]
-
 
 ports {
   https = 8501
@@ -139,6 +135,9 @@ ports {
   grpc_tls = 8503
 }
 
+connect {
+  enabled = true
+}
 EOF
 
 
