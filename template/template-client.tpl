@@ -27,10 +27,6 @@ sudo apt-get update
 
 sudo apt-get install consul-terraform-sync-enterprise jq -y
 
-
-
-
-
 # ---- Check directories ----
 if [ -d "$CONSUL_DIR" ];then
     echo "Consul configurations will be created in $CONSUL_DIR" >> /tmp/consul-log.out
@@ -129,14 +125,14 @@ client_addr = "0.0.0.0"
 bind_addr = "$PRIVATE_IP"
 recursors = ["8.8.8.8","1.1.1.1"]
 
+connect {
+  enabled = true
+}
+
 ports {
   https = 8501
   grpc = 8502
   grpc_tls = 8503
-}
-
-connect {
-  enabled = true
 }
 EOF
 
@@ -202,6 +198,18 @@ export ARCH_CNI="$( [ $(uname -m) = aarch64 ] && echo arm64 || echo amd64)"
 curl -L -o consul-cni.zip "https://releases.hashicorp.com/consul-cni/$${CONSUL_CNI_VERSION}/consul-cni_$${CONSUL_CNI_VERSION}_linux_$${ARCH_CNI}".zip
 sudo unzip consul-cni.zip -d /opt/cni/bin -x LICENSE.txt
 
+# Configure bridge networking kernel parameters for Consul Connect transparent proxy
+echo "==> Configuring bridge networking kernel parameters"
+echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-arptables
+echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-ip6tables
+echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-iptables
+
+# Make bridge networking parameters persistent
+sudo tee /etc/sysctl.d/bridge.conf > /dev/null <<EOF
+net.bridge.bridge-nf-call-arptables = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables  = 1
+EOF
 
 ## Installing Java 21
 sudo apt install ca-certificates apt-transport-https gnupg wget -y
