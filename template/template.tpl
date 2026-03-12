@@ -76,7 +76,6 @@ tls {
    }
 }
 
-
 auto_encrypt {
   allow_tls = true
 }
@@ -112,10 +111,6 @@ reporting {
   }
 }
 
-
-EOF
-
-sudo tee $CONSUL_DIR/server.hcl > /dev/null <<EOF
 server = true
 bootstrap_expect = 3
 
@@ -132,8 +127,6 @@ ports {
   grpc = 8502
   grpc_tls = 8503
 }
-
-
 EOF
 
 echo "==> Creating the Consul service"
