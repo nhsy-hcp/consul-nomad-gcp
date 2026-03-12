@@ -54,7 +54,7 @@ resource "google_compute_firewall" "internal" {
 
 resource "google_compute_region_backend_service" "client_ingress" {
   count = length(google_compute_region_instance_group_manager.clients_group)
-  name  = "${var.cluster_name}-apigw-${count.index}"
+  name  = "${var.cluster_name}-ingress-${count.index}"
   health_checks = [
     google_compute_region_health_check.client_ingress[0].id
   ]
@@ -69,14 +69,17 @@ resource "google_compute_region_backend_service" "client_ingress" {
 
 
 resource "google_compute_region_health_check" "client_ingress" {
-  count              = var.nomad_clients > 0 ? 1 : 0
-  name               = "${var.cluster_name}-health-check-apigw"
-  check_interval_sec = 1
-  timeout_sec        = 1
-  region             = var.gcp_region
+  count               = var.nomad_clients > 0 ? 1 : 0
+  name                = "${var.cluster_name}-health-check-ingress"
+  check_interval_sec  = 10
+  timeout_sec         = 5
+  healthy_threshold   = 3
+  unhealthy_threshold = 5
+  region              = var.gcp_region
 
-  tcp_health_check {
-    port = "80"
+  https_health_check {
+    port         = "443"
+    request_path = "/"
   }
 }
 
