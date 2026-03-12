@@ -395,6 +395,7 @@ No modules.
 | <a name="output_NOMAD_TOKEN"></a> [NOMAD\_TOKEN](#output\_NOMAD\_TOKEN) | Nomad bootstrap token for authentication |
 | <a name="output_apigw_load_balancers"></a> [apigw\_load\_balancers](#output\_apigw\_load\_balancers) | IP addresses of the API gateway load balancers |
 | <a name="output_cluster_name"></a> [cluster\_name](#output\_cluster\_name) | Cluster name used as a prefix for GCP resources |
+| <a name="output_consul_fqdn"></a> [consul\_fqdn](#output\_consul\_fqdn) | Fully qualified domain name for the Consul endpoint |
 | <a name="output_eval_vars"></a> [eval\_vars](#output\_eval\_vars) | Environment variables for Consul and Nomad CLI access |
 | <a name="output_gcp_project"></a> [gcp\_project](#output\_gcp\_project) | GCP project ID where resources are deployed |
 | <a name="output_gcp_region"></a> [gcp\_region](#output\_gcp\_region) | GCP region where resources are deployed |
@@ -407,5 +408,6 @@ No modules.
 | <a name="output_ingress_url"></a> [ingress\_url](#output\_ingress\_url) | Base HTTPS URL for the ingress endpoint |
 | <a name="output_letsencrypt_email"></a> [letsencrypt\_email](#output\_letsencrypt\_email) | Email address for Let's Encrypt certificate registration |
 | <a name="output_monte_carlo_bucket"></a> [monte\_carlo\_bucket](#output\_monte\_carlo\_bucket) | Name of the GCS bucket for Monte Carlo simulation results |
+| <a name="output_nomad_fqdn"></a> [nomad\_fqdn](#output\_nomad\_fqdn) | Fully qualified domain name for the Nomad endpoint |
 | <a name="output_partitions"></a> [partitions](#output\_partitions) | List of Consul admin partitions assigned to Nomad clients |
 <!-- END_TF_DOCS -->

@@ -70,6 +70,16 @@ output "ingress_fqdn" {
   value       = try(trimsuffix(google_dns_record_set.ingress[0].name, "."), null)
 }
 
+output "consul_fqdn" {
+  description = "Fully qualified domain name for the Consul endpoint"
+  value       = local.consul_fqdn
+}
+
+output "nomad_fqdn" {
+  description = "Fully qualified domain name for the Nomad endpoint"
+  value       = local.nomad_fqdn
+}
+
 output "gcp_project" {
   description = "GCP project ID where resources are deployed"
   value       = var.gcp_project
