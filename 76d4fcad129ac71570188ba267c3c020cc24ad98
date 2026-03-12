@@ -1,0 +1,6 @@
+{"id":"1d4bdfc8-e43f-4858-857a-edddd7cf156a","ts":"2026-03-12T10:27:26.028Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/jobs/traefik-connect.nomad","version":"1.0.0","taskID":"22d743d8-302f-4598-92ae-8f69583a90d6"}
+{"id":"f1ead379-b038-4f5e-b91c-c2f6a8477eed","ts":"2026-03-12T10:33:15.443Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/jobs/traefik-connect.nomad","version":"1.0.0","taskID":"22d743d8-302f-4598-92ae-8f69583a90d6"}
+{"id":"28ef221e-6edc-41b6-9a93-0f8972e2a15b","ts":"2026-03-12T13:20:08.507Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/jobs/traefik-connect.nomad","version":"1.0.0","taskID":"3ce56a8b-0a2d-468c-aa82-2f03903a227a"}
+{"id":"32492416-53c0-4270-8d39-0bf35294e97f","ts":"2026-03-12T13:22:09.452Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/network.tf","version":"1.0.0","taskID":"3ce56a8b-0a2d-468c-aa82-2f03903a227a"}
+{"id":"0b4e9d60-3db9-47a0-8aee-90c223a88308","ts":"2026-03-12T13:22:42.055Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/network.tf","version":"1.0.0","taskID":"3ce56a8b-0a2d-468c-aa82-2f03903a227a"}
+{"id":"afed7ade-7b89-4519-a711-9abcdd16311e","ts":"2026-03-12T13:23:01.956Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/network.tf","version":"1.0.0","taskID":"3ce56a8b-0a2d-468c-aa82-2f03903a227a"}
