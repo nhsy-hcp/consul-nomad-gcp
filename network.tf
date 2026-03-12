@@ -77,9 +77,8 @@ resource "google_compute_region_health_check" "client_ingress" {
   unhealthy_threshold = 5
   region              = var.gcp_region
 
-  http_health_check {
-    port         = "80"
-    request_path = "/"
+  tcp_health_check {
+    port = "80"
   }
 }
 
