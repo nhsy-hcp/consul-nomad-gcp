@@ -68,8 +68,8 @@ GEMINI.md
 .plans/
 
 # Nomad job variable files with environment-specific values
-jobs/*.hcl
-!jobs/*.hcl.example
+jobs/**/*.hcl
+!jobs/**/*.hcl.example
 
 # Monte Carlo job data and results
 jobs/monte-carlo/data/

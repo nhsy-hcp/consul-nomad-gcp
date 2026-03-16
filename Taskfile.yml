@@ -586,7 +586,7 @@ tasks:
     cmds:
       - |
         docker buildx build --platform linux/amd64,linux/arm64 \
-        -t ghcr.io/nhsy-hcp/consul-nomad-gcp/monte-carlo:latest \
+        -t ghcr.io/nhsy-hcp/terraform-gcp-consul-nomad/monte-carlo:latest \
         --push .
 
   # ============================================================================

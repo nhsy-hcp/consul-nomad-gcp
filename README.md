@@ -1,4 +1,4 @@
-# consul-nomad-gcp
+# terraform-gcp-consul-nomad
 This project provides a comprehensive configuration to deploy resilient, multi-datacenter HashiCorp Consul and Nomad clusters on Google Cloud Platform (GCP).
 It is a starting point for running containerized and non-containerized workloads, using HCP Terraform for infrastructure management.
 
@@ -84,7 +84,7 @@ github_organization = "your-github-org"
 github_repository   = "your-repo-name"
 tfc_organization    = "your-hcp-terraform-org"
 tfc_project         = "your-hcp-terraform-project"
-tfc_workspace       = "consul-nomad-gcp-dc1"
+tfc_workspace       = "terraform-gcp-consul-nomad-dc1"
 
 tfc_variables = {
   gcp_project              = { value = "your-gcp-project-id" }

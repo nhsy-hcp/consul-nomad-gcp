@@ -33,10 +33,10 @@ A comprehensive Monte Carlo simulation tool for financial risk analysis, built w
 
 ```bash
 # Pull from GitHub Container Registry
-docker pull ghcr.io/nhsy-hcp/consul-nomad-gcp/monte-carlo:latest
+docker pull ghcr.io/nhsy-hcp/terraform-gcp-consul-nomad/monte-carlo:latest
 
 # Run a simple simulation
-docker run --rm ghcr.io/nhsy-hcp/consul-nomad-gcp/monte-carlo:latest \
+docker run --rm ghcr.io/nhsy-hcp/terraform-gcp-consul-nomad/monte-carlo:latest \
   --tickers AAPL MSFT GOOGL \
   --days 252 \
   --simulations 10000
@@ -128,26 +128,26 @@ echo $GITHUB_TOKEN | docker login ghcr.io -u nhsy-hcp --password-stdin
 
 # Build and push multi-architecture image
 docker buildx build --platform linux/amd64,linux/arm64 \
-  -t ghcr.io/nhsy-hcp/consul-nomad-gcp/monte-carlo:latest \
+  -t ghcr.io/nhsy-hcp/terraform-gcp-consul-nomad/monte-carlo:latest \
   --push .
 
 # Pull from GHCR
-docker pull ghcr.io/nhsy-hcp/consul-nomad-gcp/monte-carlo:latest
+docker pull ghcr.io/nhsy-hcp/terraform-gcp-consul-nomad/monte-carlo:latest
 
 # Pull specific architecture if needed
-docker pull --platform linux/amd64 ghcr.io/nhsy-hcp/consul-nomad-gcp/monte-carlo:latest
+docker pull --platform linux/amd64 ghcr.io/nhsy-hcp/terraform-gcp-consul-nomad/monte-carlo:latest
 ```
 
 ### Running Simulations
 
 ```bash
 # Basic simulation
-docker run --rm ghcr.io/nhsy-hcp/consul-nomad-gcp/monte-carlo:latest --tickers AAPL --days 60
+docker run --rm ghcr.io/nhsy-hcp/terraform-gcp-consul-nomad/monte-carlo:latest --tickers AAPL --days 60
 
 # Mount local directory for results
 docker run --rm \
   -v $(pwd)/results:/app/results \
-  ghcr.io/nhsy-hcp/consul-nomad-gcp/monte-carlo:latest \
+  ghcr.io/nhsy-hcp/terraform-gcp-consul-nomad/monte-carlo:latest \
   --tickers AAPL MSFT \
   --output-dir /app/results
 
@@ -155,7 +155,7 @@ docker run --rm \
 docker run --rm \
   -e GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json \
   -v /path/to/service-account.json:/path/to/service-account.json:ro \
-  ghcr.io/nhsy-hcp/consul-nomad-gcp/monte-carlo:latest \
+  ghcr.io/nhsy-hcp/terraform-gcp-consul-nomad/monte-carlo:latest \
   --tickers GOOGL \
   --gcs-bucket gs://my-bucket/monte-carlo
 ```
@@ -507,7 +507,7 @@ python -m pytest tests/ --cov=src --cov-report=html
 
 # In Docker
 docker run --rm -v $(pwd):/workspace -w /workspace --entrypoint="" \
-  ghcr.io/nhsy-hcp/consul-nomad-gcp/monte-carlo:latest python -m pytest tests/ -v
+  ghcr.io/nhsy-hcp/terraform-gcp-consul-nomad/monte-carlo:latest python -m pytest tests/ -v
 ```
 
 ### Test Categories
