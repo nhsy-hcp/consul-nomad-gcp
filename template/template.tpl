@@ -41,7 +41,9 @@ echo $NOMAD_LICENSE | sudo tee $NOMAD_DIR/license.hclic > /dev/null
 echo "==> Adding server certificates to /etc/consul.d"
 consul tls cert create -server -dc $DC \
     -ca "$CONSUL_DIR"/tls/consul-agent-ca.pem \
-    -key  "$CONSUL_DIR"/tls/consul-agent-ca-key.pem
+    -key "$CONSUL_DIR"/tls/consul-agent-ca-key.pem \
+    -additional-dnsname="local_agent"
+
 sudo mv "$DC"-server-consul-*.pem "$CONSUL_DIR"/tls/
 
 # ----------------------------------
@@ -274,13 +276,13 @@ RestartSec=2
 ## to configure how many starts per interval are allowed. The values in the
 ## commented lines are defaults.
 
-# StartLimitBurst = 5
+## StartLimitBurst = 5
 
 ## StartLimitIntervalSec is used for systemd versions >= 230
-# StartLimitIntervalSec = 10s
+## StartLimitIntervalSec = 10s
 
 ## StartLimitInterval is used for systemd versions < 230
-# StartLimitInterval = 10s
+## StartLimitInterval = 10s
 
 TasksMax=infinity
 OOMScoreAdjust=-1000

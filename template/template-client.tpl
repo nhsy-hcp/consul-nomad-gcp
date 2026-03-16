@@ -79,7 +79,6 @@ log_level = "DEBUG"
 tls {
    defaults {
       ca_file = "$CONSUL_DIR/tls/consul-agent-ca.pem"
-
       verify_incoming = false
       verify_outgoing = true
    }
@@ -87,7 +86,8 @@ tls {
       verify_server_hostname = false
    }
    grpc {
-      verify_server_hostname = false
+      #use_auto_cert = true
+      verify_incoming = false
    }
 }
 
@@ -237,7 +237,7 @@ consul {
   grpc_address = "127.0.0.1:8503"
   grpc_ca_file = "$CONSUL_DIR/tls/consul-agent-ca.pem"
   #ssl = true
-  #verify_ssl = false
+  verify_ssl = false
 
   token = "${bootstrap_token}"
 
