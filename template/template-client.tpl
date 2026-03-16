@@ -86,6 +86,9 @@ tls {
    internal_rpc {
       verify_server_hostname = false
    }
+   grpc {
+      verify_server_hostname = false
+   }
 }
 
 acl = {
@@ -229,6 +232,13 @@ acl  {
   enabled = true
 }
 consul {
+  address = "127.0.0.1:8500"
+  ca_file = "$CONSUL_DIR/tls/consul-agent-ca.pem"
+  grpc_address = "127.0.0.1:8503"
+  grpc_ca_file = "$CONSUL_DIR/tls/consul-agent-ca.pem"
+  #ssl = true
+  #verify_ssl = false
+
   token = "${bootstrap_token}"
 
   service_identity {
@@ -251,6 +261,10 @@ plugin "docker" {
   }
   image_pull_timeout = "15m"
 }
+
+plugin "cni" {
+  directory = "/opt/cni/bin"
+}
 EOF
 
 # create the host volume folders
@@ -262,6 +276,7 @@ sudo mkdir -p /srv/traefik
 sudo tee $NOMAD_DIR/client.hcl > /dev/null <<EOF
 client {
   enabled = true
+  cni_path = "opt/cni/bin"
   node_pool = "default"
 
   host_volume "jupyter" {
@@ -286,6 +301,8 @@ telemetry {
   publish_node_metrics       = true
   prometheus_metrics         = true
 }
+
+
 EOF
 
 echo "==> Creating the Nomad service"
