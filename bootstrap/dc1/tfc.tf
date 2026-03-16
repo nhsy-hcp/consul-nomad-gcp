@@ -28,7 +28,7 @@ resource "tfe_workspace" "default" {
   speculative_enabled = true
   tag_names           = ["gcp", "workload-identity"]
   terraform_version   = ">= 1.10.0"
-  trigger_patterns    = ["*.tf", "*.tfvars"]
+  trigger_patterns    = ["*.tf", "*.tfvars", "template/*.tpl"]
 
   vcs_repo {
     branch                     = "main"
