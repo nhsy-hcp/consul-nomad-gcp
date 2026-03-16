@@ -1,1 +1,10 @@
 {"id":"bea2c21f-a7ad-4b17-a75f-5e0cf7a9d1f5","ts":"2026-03-16T16:03:33.348Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/template/template-client.tpl","version":"1.0.0","taskID":"5e90e201-9ae4-4734-988c-e1fc8026347c"}
+
+{"id":"010751a9-7b89-47a5-ab36-0a274f5cee14","ts":"2026-03-16T15:58:02.986Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/variables.tf","version":"1.0.0","taskID":"f775acd8-4ade-456b-9afa-6a0553487ff1"}
+{"id":"eed6207c-9c14-4ec9-9acf-dfc848b614c7","ts":"2026-03-16T15:58:17.093Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/template/template-client.tpl","version":"1.0.0","taskID":"f775acd8-4ade-456b-9afa-6a0553487ff1"}
+{"id":"98f032ec-46fd-404b-8a92-7e220bb6e87e","ts":"2026-03-16T15:58:29.747Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/template/template-client-gpu.tpl","version":"1.0.0","taskID":"f775acd8-4ade-456b-9afa-6a0553487ff1"}
+{"id":"b515a111-e6ef-4205-bdaa-a5479448e44b","ts":"2026-03-16T15:58:37.674Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/template/template.tpl","version":"1.0.0","taskID":"f775acd8-4ade-456b-9afa-6a0553487ff1"}
+{"id":"6aa9ccf3-2c8a-4175-9077-e8a3ddbf6228","ts":"2026-03-16T15:58:53.505Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/instances.tf","version":"1.0.0","taskID":"f775acd8-4ade-456b-9afa-6a0553487ff1"}
+{"id":"3a298256-ad40-4e54-9e41-da050af2d728","ts":"2026-03-16T15:59:00.099Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/instances.tf","version":"1.0.0","taskID":"f775acd8-4ade-456b-9afa-6a0553487ff1"}
+{"id":"e9dec4ad-3cc3-40a8-b9f0-ba48ef7cd79b","ts":"2026-03-16T15:59:07.384Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/instances.tf","version":"1.0.0","taskID":"f775acd8-4ade-456b-9afa-6a0553487ff1"}
+{"id":"727988f8-d032-40f9-8dfb-3937ad711993","ts":"2026-03-16T15:59:24.576Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/README.md","version":"1.0.0","taskID":"f775acd8-4ade-456b-9afa-6a0553487ff1"}
