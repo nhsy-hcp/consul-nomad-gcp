@@ -80,7 +80,7 @@ node_meta = {
 encrypt = "${consul_encrypt_key}"
 retry_join = ["provider=gce project_name=${gcp_project} tag_value=${tag} zone_pattern=\"${zone}-[a-z]\""]
 license_path = "$CONSUL_DIR/license.hclic"
-log_level = "DEBUG"
+log_level = "${consul_log_level}"
 
 
 tls {
@@ -134,7 +134,7 @@ partition ="${partition}"
 
 client_addr = "0.0.0.0"
 bind_addr = "$PRIVATE_IP"
-recursors = ["8.8.8.8","1.1.1.1"]
+recursors = ["169.254.169.254"]
 
 connect {
   enabled = true

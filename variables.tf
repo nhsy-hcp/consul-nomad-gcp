@@ -159,3 +159,14 @@ variable "consul_cni_version" {
   type        = string
   default     = "1.9.5"
 }
+
+variable "consul_log_level" {
+  description = "Log level for Consul agents (TRACE, DEBUG, INFO, WARN, ERR)"
+  type        = string
+  default     = "INFO"
+
+  validation {
+    condition     = contains(["TRACE", "DEBUG", "INFO", "WARN", "ERR"], var.consul_log_level)
+    error_message = "Consul log level must be one of: TRACE, DEBUG, INFO, WARN, ERR"
+  }
+}

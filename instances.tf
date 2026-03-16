@@ -87,7 +87,8 @@ resource "google_compute_instance_template" "nomad_clients" {
     node_name          = "clients-${count.index}",
     partition          = var.consul_partitions != [""] ? element(local.admin_partitions, count.index) : "default"
     cni_plugin_version = var.cni_plugin_version,
-    consul_cni_version = var.consul_cni_version
+    consul_cni_version = var.consul_cni_version,
+    consul_log_level   = var.consul_log_level
   })
   labels = {
     node = "client-${count.index}"
@@ -148,7 +149,8 @@ resource "google_compute_instance_template" "nomad_gpu_clients" {
     node_name          = "client-gpu-${count.index}",
     partition          = var.consul_partitions != [""] ? element(local.admin_partitions, count.index) : "default"
     cni_plugin_version = var.cni_plugin_version,
-    consul_cni_version = var.consul_cni_version
+    consul_cni_version = var.consul_cni_version,
+    consul_log_level   = var.consul_log_level
   })
   labels = {
     node = "client-gpu-${count.index}"
@@ -309,7 +311,8 @@ resource "google_compute_region_per_instance_config" "with_script" {
         node_name          = "${var.cluster_name}-server-${count.index}",
         nomad_token        = random_uuid.nomad_bootstrap.result,
         nomad_bootstrapper = count.index == var.server_nodes - 1 ? true : false,
-        oidc_issuer        = local.nomad_https_url
+        oidc_issuer        = local.nomad_https_url,
+        consul_log_level   = var.consul_log_level
       })
       instance_template = google_compute_instance_template.instance_template.self_link
     }

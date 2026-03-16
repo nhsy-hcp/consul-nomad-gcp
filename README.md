@@ -4,6 +4,8 @@ It is a starting point for running containerized and non-containerized workloads
 
 ## Architecture Overview
 
+This project implements a highly available and secure HashiCorp stack on Google Cloud. For a detailed technical breakdown of the infrastructure, networking, and security model, see the [Architecture Deep Dive](docs/architecture.md).
+
 *   **Networking:** A custom VPC with public and private subnets. GCP Load Balancers expose the Consul and Nomad UIs, while a separate load balancer handles application traffic.
 *   **Compute:** Managed Instance Groups (MIGs) for Consul/Nomad servers and Nomad clients, ensuring high availability across multiple zones.
 *   **Image Management:** Packer builds custom GCP images with all necessary software pre-installed, following immutable infrastructure best practices.
@@ -28,7 +30,7 @@ It is a starting point for running containerized and non-containerized workloads
 ### Workload Jobs
 - **jobs/**: Nomad job definitions for various workloads
   - Traefik ingress controller
-  - Example applications (echoserver, helloworld, jupyter)
+  - Example applications (echoserver-connect, helloworld-connect, connect-test, jupyter)
   - GPU test jobs
   - Monte Carlo simulation job
 
@@ -238,16 +240,19 @@ Use `task` to manage the project.
 | `task packer`        | Builds only the Packer image.                                     |
 | `task clean`         | Deletes the GCP images created by Packer.                         |
 | `task nomad:ui`            | Opens the Consul and Nomad UIs in your browser.                   |
-| `task job:run`             | Deploys all example Nomad workloads (Traefik, apps).              |
+| `task job:demo`             | Deploys all example Nomad workloads (Traefik, echoserver, helloworld).              |
 | `task job:purge`           | Stops and purges all running Nomad jobs.                          |
 | `task nomad:setup`         | Sets up Nomad + Consul Workload Identity integration.             |
 | `task gcp:destroy:mig`     | Destroys all managed instance groups via gcloud CLI.              |
 | `task gcp:destroy:lb`      | Destroys all load balancers and related resources via gcloud.     |
 | `task gcp:destroy:all`     | Destroys both MIGs and load balancers via gcloud CLI.             |
-| `task check-server-logs`   | Check server logs via gcloud SSH and IAP tunnel.                  |
+| `task gcp:logs`            | Check server logs via gcloud SSH and IAP tunnel.                  |
 | `task consul:status`       | Check Consul cluster status (members, raft, services).            |
 | `task nomad:status`        | Check Nomad cluster status (servers, nodes, jobs).                |
 | `task status`              | Check both Consul and Nomad cluster status.                       |
+| `task job:logs`            | View logs for a Nomad job (e.g. `task job:logs -- <job-name>`).    |
+| `task gcp:connect`         | SSH onto a GCP instance via IAP.                                  |
+| `task gcp:instances`       | List all GCP compute instance names.                              |
 
 **Note:** Old task names (e.g., `task ui`, `task run-jobs`) are still available as aliases for backward compatibility.
 
@@ -364,6 +369,7 @@ No modules.
 | <a name="input_consul_bootstrap_token"></a> [consul\_bootstrap\_token](#input\_consul\_bootstrap\_token) | Terraform Cloud token to use for CTS | `string` | n/a | yes |
 | <a name="input_consul_cni_version"></a> [consul\_cni\_version](#input\_consul\_cni\_version) | Version of Consul CNI plugin to install | `string` | `"1.9.5"` | no |
 | <a name="input_consul_license"></a> [consul\_license](#input\_consul\_license) | Consul Enterprise license text | `string` | n/a | yes |
+| <a name="input_consul_log_level"></a> [consul\_log\_level](#input\_consul\_log\_level) | Log level for Consul agents (TRACE, DEBUG, INFO, WARN, ERR) | `string` | `"INFO"` | no |
 | <a name="input_consul_partitions"></a> [consul\_partitions](#input\_consul\_partitions) | List of Consul Admin Partitions | `list(string)` | `[]` | no |
 | <a name="input_dns_zone"></a> [dns\_zone](#input\_dns\_zone) | An already existing DNS zone in your GCP project | `string` | `null` | no |
 | <a name="input_enable_cts"></a> [enable\_cts](#input\_enable\_cts) | Set it to true to deploy a node for CTS | `string` | `"false"` | no |
