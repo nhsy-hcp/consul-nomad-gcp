@@ -41,8 +41,7 @@ echo $NOMAD_LICENSE | sudo tee $NOMAD_DIR/license.hclic > /dev/null
 echo "==> Adding server certificates to /etc/consul.d"
 consul tls cert create -server -dc $DC \
     -ca "$CONSUL_DIR"/tls/consul-agent-ca.pem \
-    -key "$CONSUL_DIR"/tls/consul-agent-ca-key.pem \
-    -additional-dnsname="local_agent"
+    -key "$CONSUL_DIR"/tls/consul-agent-ca-key.pem
 
 sudo mv "$DC"-server-consul-*.pem "$CONSUL_DIR"/tls/
 

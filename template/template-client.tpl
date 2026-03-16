@@ -57,11 +57,12 @@ echo "$NOMAD_LICENSE" | sudo tee "$NOMAD_DIR/license.hclic" > /dev/null
 sudo chmod 600 "$NOMAD_DIR/license.hclic"
 
 # ---- Preparing certificates ----
-echo "==> Adding server certificates to /etc/consul.d"
-# consul tls cert create -server -dc $DC \
-#     -ca "$CONSUL_DIR"/tls/consul-agent-ca.pem \
-#     -key  "$CONSUL_DIR"/tls/consul-agent-ca-key.pem
-# sudo mv "$DC"-server-consul-*.pem "$CONSUL_DIR"/tls/
+echo "==> Adding client certificates to /etc/consul.d"
+consul tls cert create -client -dc $DC \
+    -ca "$CONSUL_DIR"/tls/consul-agent-ca.pem \
+    -key "$CONSUL_DIR"/tls/consul-agent-ca-key.pem \
+    -additional-dnsname="local_agent"
+sudo mv "$DC"-client-consul-*.pem "$CONSUL_DIR"/tls/
 
 # ----------------------------------
 echo "==> Generating Consul configs"
@@ -85,6 +86,8 @@ log_level = "DEBUG"
 tls {
    defaults {
       ca_file = "$CONSUL_DIR/tls/consul-agent-ca.pem"
+      cert_file = "$CONSUL_DIR/tls/$DC-client-consul-0.pem"
+      key_file = "$CONSUL_DIR/tls/$DC-client-consul-0-key.pem"
       verify_incoming = false
       verify_outgoing = true
    }
@@ -92,7 +95,6 @@ tls {
       verify_server_hostname = false
    }
    grpc {
-      #use_auto_cert = true
       verify_incoming = false
    }
 }
@@ -198,12 +200,12 @@ else
 fi
 
 # Installing CNI plugins
-curl -L -o cni-plugins.tgz "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/cni-plugins-linux-${ARCH}-$CNI_PLUGIN_VERSION.tgz"
+curl -L -o cni-plugins.tgz "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/cni-plugins-linux-$${ARCH}-$CNI_PLUGIN_VERSION.tgz"
 sudo mkdir -p "$CNI_PLUGIN_DIR"
 sudo tar -C "$CNI_PLUGIN_DIR" -xzf cni-plugins.tgz
 
 # Installing Consul CNI
-curl -L -o consul-cni.zip "https://releases.hashicorp.com/consul-cni/$${CONSUL_CNI_VERSION}/consul-cni_$${CONSUL_CNI_VERSION}_linux_${ARCH}.zip"
+curl -L -o consul-cni.zip "https://releases.hashicorp.com/consul-cni/$${CONSUL_CNI_VERSION}/consul-cni_$${CONSUL_CNI_VERSION}_linux_$${ARCH}.zip"
 sudo unzip consul-cni.zip -d "$CNI_PLUGIN_DIR" -x LICENSE.txt
 
 # Verify CNI plugin installation
