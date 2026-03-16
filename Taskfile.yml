@@ -24,10 +24,24 @@ tasks:
       - command -v consul >/dev/null 2>&1 || { echo "consul not found"; exit 1; }
       - echo "✓ All required dependencies are available"
 
+  lint:shellcheck:
+    desc: Run shellcheck on bash scripts and templates
+    cmds:
+      - |
+        # Check template files with Terraform-specific exclusions
+        # SC2016: Expressions don't expand in single quotes (ignore for $${VAR} Terraform syntax)
+        # SC2154: Variable is referenced but not assigned (ignore for Terraform template vars)
+        # SC2034: Variable appears unused (ignore for variables used by Terraform or systemd)
+        # SC2006: Use $(...) notation instead of backticks (ignore for comments/documentation)
+        find template/ -type f -name "*.tpl" -exec shellcheck \
+          --exclude=SC2016,SC2154,SC2034,SC2006 \
+          --shell=bash {} +
+
   lint:
     desc: Run all code quality, formatting, and security checks
     cmds:
       - 'yamllint -d "{extends: default, rules: {line-length: disable}}" .'
+      - task: lint:shellcheck
       - pre-commit run --all-files
 
   test:
@@ -259,6 +273,41 @@ tasks:
         echo "Nomad token copied to clipboard."
         echo "Consul token: $CONSUL_HTTP_TOKEN"
 
+  nomad:client:status:
+    aliases: ["client-status", "client-network"]
+    desc: Check CNI plugin and Consul Connect network status on all Nomad client nodes
+    silent: true
+    cmds:
+      - |
+        eval $(terraform output -raw eval_vars)
+        echo "=== CNI Plugin & Consul Connect Status on Nomad Clients ==="
+        echo ""
+
+        for node_id in $(nomad node status -json | jq -r '.[] | .ID'); do
+          node_data=$(nomad node status -json "$node_id")
+          node_name=$(echo "$node_data" | jq -r '.Name')
+
+          echo "Node: $node_name ($node_id)"
+          echo ""
+
+          # Check for CNI plugins
+          echo "CNI Plugins:"
+          echo "$node_data" | jq -r '.Drivers.docker.Attributes // {} | to_entries[] | select(.key | contains("cni")) | "  \(.key): \(.value)"' || echo "  No CNI plugins found"
+          echo ""
+
+          # Check for Consul Connect
+          echo "Consul Connect:"
+          echo "$node_data" | jq -r '.Drivers.docker.Attributes // {} | to_entries[] | select(.key | contains("consul")) | "  \(.key): \(.value)"' || echo "  No Consul Connect configuration found"
+          echo ""
+
+          # Check bridge network mode
+          echo "Bridge Network:"
+          echo "$node_data" | jq -r '.Drivers.docker.Attributes // {} | to_entries[] | select(.key | contains("bridge")) | "  \(.key): \(.value)"' || echo "  No bridge network configuration found"
+          echo ""
+          echo "---"
+          echo ""
+        done
+
   # ============================================================================
   # Job Namespace
   # ============================================================================
@@ -368,6 +417,35 @@ tasks:
     vars:
       ingress_fqdn:
         sh: terraform output ingress_fqdn
+
+  job:logs:
+    desc: View logs for a Nomad job (e.g. task job:logs -- traefik [task-name])
+    silent: true
+    cmds:
+      - |
+        eval $(terraform output -raw eval_vars)
+        ARGS=({{.CLI_ARGS}})
+        JOB_NAME="${ARGS[0]}"
+        TASK_NAME="${ARGS[1]}"
+
+        if [ -z "$JOB_NAME" ]; then
+          echo "ERROR: Job name required. Usage: task job:logs -- <job-name> [task-name]"
+          exit 1
+        fi
+
+        ALLOC_ID=$(nomad job allocs -json "$JOB_NAME" | jq -r '.[0].ID')
+        if [ -z "$ALLOC_ID" ] || [ "$ALLOC_ID" = "null" ]; then
+          echo "ERROR: No allocations found for job '$JOB_NAME'"
+          exit 1
+        fi
+
+        if [ -n "$TASK_NAME" ]; then
+          echo "Showing logs for job: $JOB_NAME, task: $TASK_NAME (allocation: $ALLOC_ID)"
+          nomad alloc logs -f -task "$TASK_NAME" "$ALLOC_ID"
+        else
+          echo "Showing logs for job: $JOB_NAME (allocation: $ALLOC_ID)"
+          nomad alloc logs -f "$ALLOC_ID"
+        fi
 
   # ============================================================================
   # GCP Namespace
