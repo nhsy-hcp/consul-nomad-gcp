@@ -248,12 +248,12 @@ acl  {
   enabled = true
 }
 consul {
-  address = "127.0.0.1:8500"
+  address = "127.0.0.1:8501"
   ca_file = "$CONSUL_DIR/tls/consul-agent-ca.pem"
   grpc_address = "127.0.0.1:8503"
   grpc_ca_file = "$CONSUL_DIR/tls/consul-agent-ca.pem"
-  #ssl = true
-  verify_ssl = false
+  ssl = true
+  #verify_ssl = false
 
   token = "${bootstrap_token}"
 
