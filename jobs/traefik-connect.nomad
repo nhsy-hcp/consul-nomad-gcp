@@ -36,15 +36,12 @@ job "traefik" {
     network {
       mode = "bridge"
       port "http" {
-        to = 80
         static = 80
       }
       port "https" {
-        to = 443
         static = 443
       }
       port "https-8443" {
-        to = 8443
         static = 8443
       }
     }
@@ -54,14 +51,7 @@ job "traefik" {
       port = "http"
 
       connect {
-        sidecar_service {
-          proxy {
-            upstreams {
-              destination_name = "echoserver"
-              local_bind_port  = 8080
-            }
-          }
-        }
+        native = true
       }
 
       # check {
@@ -103,8 +93,7 @@ job "traefik" {
       driver = "docker"
 
       config {
-        image = "traefik:v3"
-        network_mode = "host"
+        image        = "traefik:v3"
         ports = [
           "http",
           "https",
@@ -121,8 +110,8 @@ job "traefik" {
 
       template {
         destination = "/local/traefik.toml"
-        left_delimiter  = "{{{"
-        right_delimiter = "}}}"
+        left_delimiter  = "[["
+        right_delimiter = "]]"
         data        = <<-EOH
 [api]
   dashboard = true
@@ -172,8 +161,8 @@ EOH
 
       template {
         destination = "/local/dynamic/traefik_dynamic.toml"
-        left_delimiter  = "{{{"
-        right_delimiter = "}}}"
+        left_delimiter  = "[["
+        right_delimiter = "]]"
         data        = <<-EOH
 [tls.stores]
   [tls.stores.default.defaultGeneratedCert]

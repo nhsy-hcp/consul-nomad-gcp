@@ -44,14 +44,7 @@ job "traefik" {
 
     service {
       name = "traefik"
-      # port = "http"
 
-      # connect {
-      #   sidecar_service {
-      #     proxy {
-      #       transparent_proxy {}
-      #   }
-      # }
       check {
         name            = "tcp-80-healthcheck"
         type            = "tcp"
