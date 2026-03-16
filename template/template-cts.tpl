@@ -49,7 +49,6 @@ sudo mkdir -p /opt/consul/audit
 
 # ---- Enterprise Licenses ----
 echo $CONSUL_LICENSE | sudo tee $CONSUL_DIR/license.hclic > /dev/null
-echo $NOMAD_LICENSE | sudo tee $NOMAD_DIR/license.hclic > /dev/null
 
 # ---- Preparing certificates ----
 echo "==> Adding server certificates to /etc/consul.d"
@@ -161,8 +160,8 @@ EOF
 
 # Let's set some permissions to read certificates from Consul
 echo "==> Changing permissions for Consul"
-sudo chown -R consul:consul "$CONSUL_DIR"/tls
-sudo chown -R consul:consul /tmp/consul/audit
+sudo chown -R consul:consul "$CONSUL_DIR"
+sudo chown -R consul:consul /opt/consul
 
 
 # ---------------

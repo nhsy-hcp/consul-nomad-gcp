@@ -172,8 +172,8 @@ EOF
 
 # Let's set some permissions to read certificates from Consul
 echo "==> Changing permissions for Consul"
-sudo chown -R consul:consul "$CONSUL_DIR"/tls
-sudo chown -R consul:consul /tmp/consul/audit
+sudo chown -R consul:consul "$CONSUL_DIR"
+sudo chown -R consul:consul /opt/consul
 
 
 # ---------------
@@ -313,9 +313,10 @@ WantedBy=multi-user.target
 EOF
 
 
-# Let's set some permissions to read certificates from Consul
-echo "==> Changing permissions"
-sudo chown -R nomad:nomad "$NOMAD_DIR"/tls
+# Let's set some permissions for Nomad
+echo "==> Changing permissions for Nomad"
+sudo chown -R nomad:nomad "$NOMAD_DIR"
+sudo chown -R nomad:nomad /opt/nomad
 
 # ---------------
 

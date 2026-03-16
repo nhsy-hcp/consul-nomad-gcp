@@ -52,8 +52,8 @@ sudo mkdir -p /opt/consul/audit
 
 # ---- Enterprise Licenses ----
 echo "$CONSUL_LICENSE" | sudo tee "$CONSUL_DIR/license.hclic" > /dev/null
-sudo chmod 600 "$CONSUL_DIR/license.hclic"
 echo "$NOMAD_LICENSE" | sudo tee "$NOMAD_DIR/license.hclic" > /dev/null
+sudo chmod 600 "$CONSUL_DIR/license.hclic"
 sudo chmod 600 "$NOMAD_DIR/license.hclic"
 
 # ---- Preparing certificates ----
@@ -174,8 +174,8 @@ EOF
 
 # Let's set some permissions to read certificates from Consul
 echo "==> Changing permissions for Consul"
-sudo chown -R consul:consul "$CONSUL_DIR"/tls
-sudo chown -R consul:consul /opt/consul/audit
+sudo chown -R consul:consul "$CONSUL_DIR"
+sudo chown -R consul:consul /opt/consul
 
 
 # ---------------
@@ -369,9 +369,10 @@ WantedBy=multi-user.target
 EOF
 
 
-# Let's set some permissions to read certificates from Consul
-echo "==> Changing permissions"
-sudo chown -R nomad:nomad "$NOMAD_DIR"/tls
+# Let's set some permissions for Nomad
+echo "==> Changing permissions for Nomad"
+sudo chown -R nomad:nomad "$NOMAD_DIR"
+sudo chown -R nomad:nomad /opt/nomad
 
 # ---------------
 
