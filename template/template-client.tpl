@@ -1,18 +1,22 @@
 #!/bin/bash
 
-CONSUL_DIR="/etc/consul.d"
+# Metadata variables
+INSTANCE_NAME=$(curl --fail --silent --show-error --retry 3 --retry-delay 2 -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/name)
+NODE_HOSTNAME=$(curl --fail --silent --show-error --retry 3 --retry-delay 2 -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/hostname)
+PRIVATE_IP=$(curl --fail --silent --show-error --retry 3 --retry-delay 2 -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip)
+PUBLIC_IP=$(curl --fail --silent --show-error --retry 3 --retry-delay 2 -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)
 
-NODE_HOSTNAME=$(curl -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/hostname)
-INSTANCE_NAME=$(curl -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/name)
-PUBLIC_IP=$(curl -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)
-PRIVATE_IP=$(curl -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip)
-DC="${dc_name}"
-CONSUL_LICENSE="${consul_license}"
-NOMAD_LICENSE="${nomad_license}"
-NOMAD_DIR="/etc/nomad.d"
-NOMAD_URL="https://releases.hashicorp.com/nomad"
+# Configuration variables
+ARCH="$([ "$(uname -m)" = aarch64 ] && echo arm64 || echo amd64)"
+CNI_PLUGIN_DIR="/opt/cni/bin"
 CNI_PLUGIN_VERSION="${cni_plugin_version}"
 CONSUL_CNI_VERSION="${consul_cni_version}"
+CONSUL_DIR="/etc/consul.d"
+CONSUL_LICENSE="${consul_license}"
+DC="${dc_name}"
+NOMAD_DIR="/etc/nomad.d"
+NOMAD_LICENSE="${nomad_license}"
+NOMAD_URL="https://releases.hashicorp.com/nomad"
 
 
 # ---- Adding some extra packages for CTS ----
@@ -31,7 +35,7 @@ sudo apt-get install consul-terraform-sync-enterprise jq -y
 if [ -d "$CONSUL_DIR" ];then
     echo "Consul configurations will be created in $CONSUL_DIR" >> /tmp/consul-log.out
 else
-    echo "Consul configurations directoy does not exist. Exiting..." >> /tmp/consul-log.out
+    echo "Consul configurations directory does not exist. Exiting..." >> /tmp/consul-log.out
     exit 1
 fi
 
@@ -47,8 +51,10 @@ fi
 sudo mkdir -p /opt/consul/audit
 
 # ---- Enterprise Licenses ----
-echo $CONSUL_LICENSE | sudo tee $CONSUL_DIR/license.hclic > /dev/null
-echo $NOMAD_LICENSE | sudo tee $NOMAD_DIR/license.hclic > /dev/null
+echo "$CONSUL_LICENSE" | sudo tee "$CONSUL_DIR/license.hclic" > /dev/null
+sudo chmod 600 "$CONSUL_DIR/license.hclic"
+echo "$NOMAD_LICENSE" | sudo tee "$NOMAD_DIR/license.hclic" > /dev/null
+sudo chmod 600 "$NOMAD_DIR/license.hclic"
 
 # ---- Preparing certificates ----
 echo "==> Adding server certificates to /etc/consul.d"
@@ -167,7 +173,7 @@ EOF
 # Let's set some permissions to read certificates from Consul
 echo "==> Changing permissions for Consul"
 sudo chown -R consul:consul "$CONSUL_DIR"/tls
-sudo chown -R consul:consul /tmp/consul/audit
+sudo chown -R consul:consul /opt/consul/audit
 
 
 # ---------------
@@ -179,7 +185,7 @@ sudo chown -R consul:consul /tmp/consul/audit
 if [ -d "$NOMAD_DIR" ];then
     echo "Nomad configurations will be created in $NOMAD_DIR" >> /tmp/nomad-log.out
 else
-    echo "Nomad configurations directoy does not exist. Exiting..." >> /tmp/nomad-log.out
+    echo "Nomad configurations directory does not exist. Exiting..." >> /tmp/nomad-log.out
     exit 1
 fi
 
@@ -192,14 +198,22 @@ else
 fi
 
 # Installing CNI plugins
-curl -L -o cni-plugins.tgz "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/cni-plugins-linux-$( [ $(uname -m) = aarch64 ] && echo arm64 || echo amd64)"-$CNI_PLUGIN_VERSION.tgz
-sudo mkdir -p /opt/cni/bin
-sudo tar -C /opt/cni/bin -xzf cni-plugins.tgz
+curl -L -o cni-plugins.tgz "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/cni-plugins-linux-${ARCH}-$CNI_PLUGIN_VERSION.tgz"
+sudo mkdir -p "$CNI_PLUGIN_DIR"
+sudo tar -C "$CNI_PLUGIN_DIR" -xzf cni-plugins.tgz
 
 # Installing Consul CNI
-export ARCH_CNI="$( [ $(uname -m) = aarch64 ] && echo arm64 || echo amd64)"
-curl -L -o consul-cni.zip "https://releases.hashicorp.com/consul-cni/$${CONSUL_CNI_VERSION}/consul-cni_$${CONSUL_CNI_VERSION}_linux_$${ARCH_CNI}".zip
-sudo unzip consul-cni.zip -d /opt/cni/bin -x LICENSE.txt
+curl -L -o consul-cni.zip "https://releases.hashicorp.com/consul-cni/$${CONSUL_CNI_VERSION}/consul-cni_$${CONSUL_CNI_VERSION}_linux_${ARCH}.zip"
+sudo unzip consul-cni.zip -d "$CNI_PLUGIN_DIR" -x LICENSE.txt
+
+# Verify CNI plugin installation
+if [[ ! -f "$CNI_PLUGIN_DIR/bridge" ]] || [[ ! -f "$CNI_PLUGIN_DIR/consul-cni" ]]; then
+  echo "ERROR: CNI plugin installation failed" >&2
+  exit 1
+fi
+
+# Clean up downloaded artifacts
+rm -f cni-plugins.tgz consul-cni.zip
 
 # Configure bridge networking kernel parameters for Consul Connect transparent proxy
 echo "==> Configuring bridge networking kernel parameters"
@@ -263,7 +277,7 @@ plugin "docker" {
 }
 
 plugin "cni" {
-  directory = "/opt/cni/bin"
+  directory = "$CNI_PLUGIN_DIR"
 }
 EOF
 
@@ -276,7 +290,7 @@ sudo mkdir -p /srv/traefik
 sudo tee $NOMAD_DIR/client.hcl > /dev/null <<EOF
 client {
   enabled = true
-  cni_path = "opt/cni/bin"
+  cni_path = "$CNI_PLUGIN_DIR"
   node_pool = "default"
 
   host_volume "jupyter" {
@@ -400,10 +414,12 @@ EOF
 
 # INIT SERVICES
 
-echo "==> Starting Consul..."
+echo "==> Enabling and starting Consul..."
+sudo systemctl enable consul
 sudo systemctl start consul
 
-echo "==> Starting Nomad..."
+echo "==> Enabling and starting Nomad..."
+sudo systemctl enable nomad
 sudo systemctl start nomad
 
 #Configuring DNS resolution for Consul
@@ -418,5 +434,11 @@ EOF
 
 sudo iptables --table nat --append OUTPUT --destination localhost --protocol udp --match udp --dport 53 --jump REDIRECT --to-ports 8600
 sudo iptables --table nat --append OUTPUT --destination localhost --protocol tcp --match tcp --dport 53 --jump REDIRECT --to-ports 8600
+
+# Make iptables rules persistent across reboots
+echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
+echo iptables-persistent iptables-persistent/autosave_v6 boolean true | sudo debconf-set-selections
+sudo apt-get install -y iptables-persistent
+sudo netfilter-persistent save
 
 sudo systemctl restart systemd-resolved
