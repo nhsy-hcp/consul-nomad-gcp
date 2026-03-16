@@ -200,14 +200,14 @@ terraform output
     Open the Nomad and Consul web interfaces in your browser.
 
     ```bash
-task nomad:ui
+    task nomad:ui
     ```
 
 6.  **Setup:**
     Enable Nomad + Consul Workload Identity integration.
 
     ```bash
-task nomad:setup
+    task nomad:setup
     ```
 
 ## Configuration Reference

@@ -48,11 +48,11 @@ sudo mkdir -p /opt/consul/audit
 
 
 # ---- Enterprise Licenses ----
-echo $CONSUL_LICENSE | sudo tee $CONSUL_DIR/license.hclic > /dev/null
+echo "$CONSUL_LICENSE" | sudo tee "$CONSUL_DIR"/license.hclic > /dev/null
 
 # ---- Preparing certificates ----
 echo "==> Adding server certificates to /etc/consul.d"
-consul tls cert create -server -dc $DC \
+consul tls cert create -server -dc "$DC" \
     -ca "$CONSUL_DIR"/tls/consul-agent-ca.pem \
     -key  "$CONSUL_DIR"/tls/consul-agent-ca-key.pem
 sudo mv "$DC"-server-consul-*.pem "$CONSUL_DIR"/tls/

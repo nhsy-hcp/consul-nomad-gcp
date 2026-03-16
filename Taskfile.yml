@@ -24,24 +24,10 @@ tasks:
       - command -v consul >/dev/null 2>&1 || { echo "consul not found"; exit 1; }
       - echo "✓ All required dependencies are available"
 
-  lint:shellcheck:
-    desc: Run shellcheck on bash scripts and templates
-    cmds:
-      - |
-        # Check template files with Terraform-specific exclusions
-        # SC2016: Expressions don't expand in single quotes (ignore for $${VAR} Terraform syntax)
-        # SC2154: Variable is referenced but not assigned (ignore for Terraform template vars)
-        # SC2034: Variable appears unused (ignore for variables used by Terraform or systemd)
-        # SC2006: Use $(...) notation instead of backticks (ignore for comments/documentation)
-        find template/ -type f -name "*.tpl" -exec shellcheck \
-          --exclude=SC2016,SC2154,SC2034,SC2006 \
-          --shell=bash {} +
-
   lint:
     desc: Run all code quality, formatting, and security checks
     cmds:
       - 'yamllint -d "{extends: default, rules: {line-length: disable}}" .'
-      - task: lint:shellcheck
       - pre-commit run --all-files
 
   test:

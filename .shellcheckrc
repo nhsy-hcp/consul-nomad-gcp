@@ -1,0 +1,7 @@
+# Shellcheck configuration for Terraform templates
+# Disable SC2154: Variables referenced but not assigned
+# These are Terraform template interpolations (${var}) that are substituted
+# by Terraform before the script is executed, not shell variables
+# Disable SC2034: Variables appear unused
+# Template files may set variables for Terraform or reserved for future use
+disable=SC2154,SC2034

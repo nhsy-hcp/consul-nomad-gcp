@@ -2,13 +2,16 @@
 
 CONSUL_DIR="/etc/consul.d"
 
+# shellcheck disable=SC2034
 NODE_HOSTNAME=$(curl -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/hostname)
+# shellcheck disable=SC2034
 PUBLIC_IP=$(curl -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)
 PRIVATE_IP=$(curl -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip)
 DC="${dc_name}"
 CONSUL_LICENSE="${consul_license}"
 NOMAD_LICENSE="${nomad_license}"
 NOMAD_DIR="/etc/nomad.d"
+# shellcheck disable=SC2034
 NOMAD_URL="https://releases.hashicorp.com/nomad"
 CNI_PLUGIN_VERSION="v1.9.0"
 
@@ -34,12 +37,12 @@ sudo mkdir -p /tmp/consul/audit
 
 
 # ---- Enterprise Licenses ----
-echo $CONSUL_LICENSE | sudo tee $CONSUL_DIR/license.hclic > /dev/null
-echo $NOMAD_LICENSE | sudo tee $NOMAD_DIR/license.hclic > /dev/null
+echo "$CONSUL_LICENSE" | sudo tee "$CONSUL_DIR"/license.hclic > /dev/null
+echo "$NOMAD_LICENSE" | sudo tee "$NOMAD_DIR"/license.hclic > /dev/null
 
 # ---- Preparing certificates ----
 echo "==> Adding server certificates to /etc/consul.d"
-consul tls cert create -server -dc $DC \
+consul tls cert create -server -dc "$DC" \
     -ca "$CONSUL_DIR"/tls/consul-agent-ca.pem \
     -key "$CONSUL_DIR"/tls/consul-agent-ca-key.pem
 
@@ -181,7 +184,7 @@ else
 fi
 
 # Installing CNI plugins
-curl -L -o cni-plugins.tgz "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/cni-plugins-linux-$( [ $(uname -m) = aarch64 ] && echo arm64 || echo amd64)"-$CNI_PLUGIN_VERSION.tgz
+curl -L -o cni-plugins.tgz "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/cni-plugins-linux-$([ "$(uname -m)" = aarch64 ] && echo arm64 || echo amd64)"-$CNI_PLUGIN_VERSION.tgz
 sudo mkdir -p /opt/cni/bin
 sudo tar -C /opt/cni/bin -xzf cni-plugins.tgz
 
@@ -270,8 +273,8 @@ RestartSec=2
 
 ## Configure unit start rate limiting. Units which are started more than
 ## *burst* times within an *interval* time span are not permitted to start any
-## more. Use `StartLimitIntervalSec` or `StartLimitInterval` (depending on
-## systemd version) to configure the checking interval and `StartLimitBurst`
+## more. Use StartLimitIntervalSec or StartLimitInterval (depending on
+## systemd version) to configure the checking interval and StartLimitBurst
 ## to configure how many starts per interval are allowed. The values in the
 ## commented lines are defaults.
 
@@ -308,11 +311,12 @@ sudo systemctl start nomad
 
 
 # We select the last node as the Nomad bootstrapper
+# shellcheck disable=SC2288,SC1083
 %{ if nomad_bootstrapper }
 # But wait for the Nomad leader to be elected
 HTTP_STATUS=$(curl -s -o /dev/null -w "%%{http_code}" http://localhost:4646/v1/status/leader)
 counter=0
-while [ $HTTP_STATUS -ne 200 ]; do
+while [ "$HTTP_STATUS" -ne 200 ]; do
   echo "==> Waiting for Nomad to start..."
   sleep 10
   HTTP_STATUS=$(curl -s -o /dev/null -w "%%{http_code}" http://localhost:4646/v1/status/leader)
@@ -325,4 +329,5 @@ done
 echo "==> Bootstrap Nomad..."
 # sleep 20
 nomad acl bootstrap $NOMAD_DIR/nomad_bootstrap
+# shellcheck disable=SC2288,SC1083
 %{ endif }

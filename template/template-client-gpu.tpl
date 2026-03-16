@@ -1,18 +1,23 @@
 #!/bin/bash
+# shellcheck disable=SC2034  # Some variables are used by Terraform template or set for future use
 
-CONSUL_DIR="/etc/consul.d"
+# Metadata variables (with retry logic for reliability)
+INSTANCE_NAME=$(curl --fail --silent --show-error --retry 3 --retry-delay 2 -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/name)
+NODE_HOSTNAME=$(curl --fail --silent --show-error --retry 3 --retry-delay 2 -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/hostname)
+PRIVATE_IP=$(curl --fail --silent --show-error --retry 3 --retry-delay 2 -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip)
+PUBLIC_IP=$(curl --fail --silent --show-error --retry 3 --retry-delay 2 -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)
 
-NODE_HOSTNAME=$(curl -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/hostname)
-INSTANCE_NAME=$(curl -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/name)
-PUBLIC_IP=$(curl -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)
-PRIVATE_IP=$(curl -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip)
-DC="${dc_name}"
-CONSUL_LICENSE="${consul_license}"
-NOMAD_LICENSE="${nomad_license}"
-NOMAD_DIR="/etc/nomad.d"
-NOMAD_URL="https://releases.hashicorp.com/nomad"
+# Configuration variables
+ARCH="$([ "$(uname -m)" = aarch64 ] && echo arm64 || echo amd64)"
+CNI_PLUGIN_DIR="/opt/cni/bin"
 CNI_PLUGIN_VERSION="${cni_plugin_version}"
 CONSUL_CNI_VERSION="${consul_cni_version}"
+CONSUL_DIR="/etc/consul.d"
+CONSUL_LICENSE="${consul_license}"
+DC="${dc_name}"
+NOMAD_DIR="/etc/nomad.d"
+NOMAD_LICENSE="${nomad_license}"
+NOMAD_URL="https://releases.hashicorp.com/nomad"
 
 
 # ---- Adding some extra packages for CTS ----
@@ -55,15 +60,18 @@ sudo mkdir -p /opt/consul/audit
 
 
 # ---- Enterprise Licenses ----
-echo $CONSUL_LICENSE | sudo tee $CONSUL_DIR/license.hclic > /dev/null
-echo $NOMAD_LICENSE | sudo tee $NOMAD_DIR/license.hclic > /dev/null
+echo "$CONSUL_LICENSE" | sudo tee "$CONSUL_DIR/license.hclic" > /dev/null
+echo "$NOMAD_LICENSE" | sudo tee "$NOMAD_DIR/license.hclic" > /dev/null
+sudo chmod 600 "$CONSUL_DIR/license.hclic"
+sudo chmod 600 "$NOMAD_DIR/license.hclic"
 
 # ---- Preparing certificates ----
-echo "==> Adding server certificates to /etc/consul.d"
-# consul tls cert create -server -dc $DC \
-#     -ca "$CONSUL_DIR"/tls/consul-agent-ca.pem \
-#     -key  "$CONSUL_DIR"/tls/consul-agent-ca-key.pem
-# sudo mv "$DC"-server-consul-*.pem "$CONSUL_DIR"/tls/
+echo "==> Adding client certificates to /etc/consul.d"
+consul tls cert create -client -dc "$DC" \
+    -ca "$CONSUL_DIR"/tls/consul-agent-ca.pem \
+    -key "$CONSUL_DIR"/tls/consul-agent-ca-key.pem \
+    -additional-dnsname="local_agent"
+sudo mv "$DC"-client-consul-*.pem "$CONSUL_DIR"/tls/
 
 # ----------------------------------
 echo "==> Generating Consul configs"
@@ -87,12 +95,16 @@ log_level = "${consul_log_level}"
 tls {
    defaults {
       ca_file = "$CONSUL_DIR/tls/consul-agent-ca.pem"
-
+      cert_file = "$CONSUL_DIR/tls/$DC-client-consul-0.pem"
+      key_file = "$CONSUL_DIR/tls/$DC-client-consul-0-key.pem"
       verify_incoming = false
       verify_outgoing = true
    }
    internal_rpc {
       verify_server_hostname = false
+   }
+   grpc {
+      verify_incoming = false
    }
 }
 
@@ -134,8 +146,11 @@ partition ="${partition}"
 
 client_addr = "0.0.0.0"
 bind_addr = "$PRIVATE_IP"
-recursors = ["8.8.8.8","1.1.1.1"]
+recursors = ["169.254.169.254"]
 
+connect {
+  enabled = true
+}
 
 ports {
   https = 8501
@@ -198,14 +213,35 @@ else
 fi
 
 # Installing CNI plugins
-curl -L -o cni-plugins.tgz "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/cni-plugins-linux-$( [ $(uname -m) = aarch64 ] && echo arm64 || echo amd64)"-$CNI_PLUGIN_VERSION.tgz
-sudo mkdir -p /opt/cni/bin
-sudo tar -C /opt/cni/bin -xzf cni-plugins.tgz
+curl -L -o cni-plugins.tgz "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/cni-plugins-linux-$${ARCH}-$CNI_PLUGIN_VERSION.tgz"
+sudo mkdir -p "$CNI_PLUGIN_DIR"
+sudo tar -C "$CNI_PLUGIN_DIR" -xzf cni-plugins.tgz
 
 # Installing Consul CNI
-export ARCH_CNI="$( [ $(uname -m) = aarch64 ] && echo arm64 || echo amd64)"
-curl -L -o consul-cni.zip "https://releases.hashicorp.com/consul-cni/$${CONSUL_CNI_VERSION}/consul-cni_$${CONSUL_CNI_VERSION}_linux_$${ARCH_CNI}".zip
-sudo unzip consul-cni.zip -d /opt/cni/bin -x LICENSE.txt
+curl -L -o consul-cni.zip "https://releases.hashicorp.com/consul-cni/$${CONSUL_CNI_VERSION}/consul-cni_$${CONSUL_CNI_VERSION}_linux_$${ARCH}.zip"
+sudo unzip consul-cni.zip -d "$CNI_PLUGIN_DIR" -x LICENSE.txt
+
+# Verify CNI plugin installation
+if [[ ! -f "$CNI_PLUGIN_DIR/bridge" ]] || [[ ! -f "$CNI_PLUGIN_DIR/consul-cni" ]]; then
+  echo "ERROR: CNI plugin installation failed" >&2
+  exit 1
+fi
+
+# Clean up downloaded artifacts
+rm -f cni-plugins.tgz consul-cni.zip
+
+# Configure bridge networking kernel parameters for Consul Connect transparent proxy
+echo "==> Configuring bridge networking kernel parameters"
+echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-arptables
+echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-ip6tables
+echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-iptables
+
+# Make bridge networking parameters persistent
+sudo tee /etc/sysctl.d/bridge.conf > /dev/null <<EOF
+net.bridge.bridge-nf-call-arptables = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables  = 1
+EOF
 
 sudo mkdir -p /opt/nomad/plugins
 
@@ -225,6 +261,13 @@ acl  {
   enabled = true
 }
 consul {
+  address = "127.0.0.1:8501"
+  ca_file = "$CONSUL_DIR/tls/consul-agent-ca.pem"
+  grpc_address = "127.0.0.1:8503"
+  grpc_ca_file = "$CONSUL_DIR/tls/consul-agent-ca.pem"
+  ssl = true
+  #verify_ssl = false
+
   token = "${bootstrap_token}"
 
   service_identity {
@@ -237,13 +280,28 @@ consul {
     ttl = "1h"
   }
 }
+plugin "docker" {
+  config {
+    allow_privileged = true
+  }
+  gc {
+    image = true
+    image_delay = "1h"
+  }
+  image_pull_timeout = "15m"
+}
 
+plugin "cni" {
+  directory = "$CNI_PLUGIN_DIR"
+}
 EOF
 
 sudo tee $NOMAD_DIR/client.hcl > /dev/null <<EOF
 client {
   enabled = true
+  cni_path = "$CNI_PLUGIN_DIR"
   node_pool = "gpu"
+
   host_volume "openwebui-ollama" {
     path      = "/srv/openwebui-ollama"
     read_only = false
@@ -292,8 +350,8 @@ RestartSec=2
 
 ## Configure unit start rate limiting. Units which are started more than
 ## *burst* times within an *interval* time span are not permitted to start any
-## more. Use `StartLimitIntervalSec` or `StartLimitInterval` (depending on
-## systemd version) to configure the checking interval and `StartLimitBurst`
+## more. Use StartLimitIntervalSec or StartLimitInterval (depending on
+## systemd version) to configure the checking interval and StartLimitBurst
 ## to configure how many starts per interval are allowed. The values in the
 ## commented lines are defaults.
 
@@ -361,10 +419,12 @@ EOF
 
 # INIT SERVICES
 
-echo "==> Starting Consul..."
+echo "==> Enabling and starting Consul..."
+sudo systemctl enable consul
 sudo systemctl start consul
 
-echo "==> Starting Nomad..."
+echo "==> Enabling and starting Nomad..."
+sudo systemctl enable nomad
 sudo systemctl start nomad
 
 #Configuring DNS resolution for Consul
@@ -374,10 +434,16 @@ sudo tee /etc/systemd/resolved.conf.d/consul.conf <<EOF
 [Resolve]
 DNS=127.0.0.1
 DNSSEC=false
-Domains=~consul
+Domains=~consul ~virtual.consul
 EOF
 
 sudo iptables --table nat --append OUTPUT --destination localhost --protocol udp --match udp --dport 53 --jump REDIRECT --to-ports 8600
 sudo iptables --table nat --append OUTPUT --destination localhost --protocol tcp --match tcp --dport 53 --jump REDIRECT --to-ports 8600
+
+# Make iptables rules persistent across reboots
+echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
+echo iptables-persistent iptables-persistent/autosave_v6 boolean true | sudo debconf-set-selections
+sudo apt-get install -y iptables-persistent
+sudo netfilter-persistent save
 
 sudo systemctl restart systemd-resolved

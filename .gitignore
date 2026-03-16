@@ -82,3 +82,4 @@ jobs/monte-carlo/results/
 *.tmp
 .tmp/
 notes.txt
+/conductor/
