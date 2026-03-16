@@ -1,0 +1,5 @@
+{"id":"897a9b3a-cdf3-4b66-86b9-c4448fd1f7eb","ts":"2026-03-16T16:06:54.981Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/README.md","version":"1.0.0","taskID":"5e90e201-9ae4-4734-988c-e1fc8026347c"}
+{"id":"22563d06-9dba-417e-a657-bd9c85277a44","ts":"2026-03-16T16:06:59.496Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/Taskfile.yml","version":"1.0.0","taskID":"5e90e201-9ae4-4734-988c-e1fc8026347c"}
+{"id":"21156d93-94b2-4ae2-8956-6fed6f4160bf","ts":"2026-03-16T16:07:03.369Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/jobs/monte-carlo/README.md","version":"1.0.0","taskID":"5e90e201-9ae4-4734-988c-e1fc8026347c"}
+{"id":"2e031095-9a66-44b3-ad82-3b0c694a3dce","ts":"2026-03-16T16:07:07.996Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/jobs/monte-carlo/vars.hcl","version":"1.0.0","taskID":"5e90e201-9ae4-4734-988c-e1fc8026347c"}
+{"id":"3372c01f-10fc-4e8e-a199-d63f419aadf2","ts":"2026-03-16T16:07:12.340Z","path":"/Users/narish.samplay/Projects/consul-nomad-gcp/docs/architecture.md","version":"1.0.0","taskID":"5e90e201-9ae4-4734-988c-e1fc8026347c"}
