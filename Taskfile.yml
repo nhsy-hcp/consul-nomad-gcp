@@ -352,9 +352,10 @@ tasks:
         eval $(terraform output -raw eval_vars)
         echo "Deploying example applications..."
         nomad job run jobs/echoserver-connect.nomad
-        # nomad job run jobs/helloworld.nomad
+        nomad job run jobs/helloworld-connect.nomad
         echo "Creating Consul intentions..."
         consul intention create -allow traefik echoserver || echo "Intention already exists"
+        consul intention create -allow traefik helloworld || echo "Intention already exists"
       - task: job:ui
 
   job:purge:
