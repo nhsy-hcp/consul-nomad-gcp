@@ -7,13 +7,12 @@ job "echoserver" {
 
     network {
       mode = "bridge"
-      port "http" {
-        to = 8080
-      }
+      port "expose" {}
     }
 
     service {
       name     = "echoserver"
+      port     = "8080"
       connect {
         sidecar_service {
           proxy {
@@ -21,9 +20,9 @@ job "echoserver" {
           }
         }
       }
-      port     = "http"
+
       check {
-        name     = "http"
+        expose   = true
         type     = "http"
         path     = "/"
         interval = "10s"
